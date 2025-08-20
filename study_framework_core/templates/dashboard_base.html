@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ study_name }} Dashboard</title>
+    <link rel="stylesheet" href="/static/css/core_styles.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    {% block extra_css %}{% endblock %}
+    <style>
+        .recent-date-button {
+            background-color: white;
+            color: #007bff; 
+            border: 1px solid lightgrey;
+        }
+        .recent-date-button:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .dashboard-table th {
+            {% for column in columns %}
+            {% if column.width %}
+            .column-{{ column.name }} { width: {{ column.width }}; }
+            {% endif %}
+            {% endfor %}
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h3>{{ study_name }} Dashboard Summary {{ date_html|safe }}</h3>
+        <div class="d-flex justify-content-center mt-3 mb-3">
+            <a href="{{ url_for('viewdashboarddate', token=token, date=most_recent_date) }}" class="btn recent-date-button">Most Recent Date</a>
+        </div>
+        {% include 'navigation.html' %}
+        
+        <table class="table table-striped dashboard-table">
+            <thead>
+                <tr>
+                    {% for column in columns %}
+                    <th scope="col" class="column-{{ column.name }}" 
+                        {% if column.sortable %}data-sortable="true"{% endif %}
+                        {% if column.filterable %}data-filterable="true"{% endif %}>
+                        {{ column.header }}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {{ rows_html|safe }}
+            </tbody>
+        </table>
+        
+        {% include 'navigation.html' %}
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="/static/js/core_dashboard.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

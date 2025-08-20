@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="#">{{ study_name }}</a>
+        
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('viewdashboard', token=token) }}">Dashboard</a>
+                </li>
+                {% if previous_date %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('viewdashboarddate', token=token, date=previous_date) }}">Previous Day</a>
+                </li>
+                {% endif %}
+                {% if next_date %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('viewdashboarddate', token=token, date=next_date) }}">Next Day</a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            {% block extra_navigation %}{% endblock %}
+        </div>
+    </div>
+</nav>
