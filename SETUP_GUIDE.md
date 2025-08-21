@@ -14,13 +14,13 @@ This guide covers everything you need to set up and use the Study Framework Core
 
 ### For Developers (Just the Package)
 ```bash
-pip install git+https://github.com/your-org/study-framework-core.git
+pip install git+https://github.com/UbiWell/ubiwell-study-backend-core.git
 ```
 
 ### For Complete Study Setup
 ```bash
-git clone https://github.com/your-org/study-framework-core.git
-cd study-framework-core
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
+cd ubiwell-study-backend-core
 python setup_study.py "My Study" --user myuser
 ```
 
@@ -29,18 +29,28 @@ python setup_study.py "My Study" --user myuser
 ### Prerequisites
 - Ubuntu/Debian server
 - Root access (sudo)
-- Anaconda/Miniconda installed
 - MongoDB installed and running
+- **Note**: Anaconda will be installed automatically at `{base-dir}/anaconda3` if not present
+
+### Workflow Overview
+The setup process follows this workflow:
+1. **Clone framework temporarily** to `/tmp/study-framework`
+2. **Run setup script** which creates study at `{base-dir}/{study-name}/`
+3. **Install Anaconda** at `{base-dir}/anaconda3/` if needed
+4. **Create conda environment** for the study
+5. **Setup systemd services** and Nginx configuration
+6. **Clean up** temporary framework files
 
 ### Step 1: Clone and Setup
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/study-framework-core.git
-cd study-framework-core
+# Clone the framework temporarily
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git /tmp/study-framework
+cd /tmp/study-framework
 
-# Run setup (as root)
+# Run setup (as root) - Anaconda will be installed automatically if needed
 sudo python setup_study.py "My Study" \
     --user myuser \
+    --base-dir /mnt/study \
     --db-username mydbuser \
     --db-password mydbpass \
     --db-host localhost \
@@ -48,13 +58,28 @@ sudo python setup_study.py "My Study" \
     --db-name my_study_db \
     --auth-key my-auth-key \
     --announcement-key my-announcement-key
+
+# Clean up framework files (optional)
+rm -rf /tmp/study-framework
 ```
+
+**Base Directory Options:**
+- `--base-dir /mnt/study` (default) - Standard location
+- `--base-dir /opt/studies` - Alternative location
+- `--base-dir /home/myuser/studies` - User-specific location
+
+**Note**: The framework is cloned temporarily and cleaned up after setup. The study data and Anaconda installation remain in the specified base directory.
 
 ### Step 2: Configure
 Edit the generated config file:
 ```bash
 nano /mnt/study/my-study/study_config.json
 ```
+
+**Note**: If Anaconda was installed automatically, it will be located at `{base-dir}/anaconda3/`. The setup script automatically:
+- Downloads and installs Anaconda 2023.09
+- Adds it to the system PATH via `/etc/profile.d/conda.sh`
+- Creates conda environments for your studies
 
 ### Step 3: Start Services
 ```bash

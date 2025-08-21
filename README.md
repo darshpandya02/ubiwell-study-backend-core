@@ -6,14 +6,20 @@ A modular, reusable framework for data collection studies that provides core fun
 
 ### For Developers (Just the Package)
 ```bash
-pip install git+https://github.com/your-org/study-framework-core.git
+pip install git+https://github.com/UbiWell/ubiwell-study-backend-core.git
 ```
 
 ### For Complete Study Setup
 ```bash
-git clone https://github.com/your-org/study-framework-core.git
-cd study-framework-core
-python setup_study.py "My Study" --user myuser
+# Clone framework temporarily
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git /tmp/study-framework
+cd /tmp/study-framework
+
+# Run setup
+python setup_study.py "My Study" --user myuser --base-dir /mnt/study
+
+# Clean up (optional)
+rm -rf /tmp/study-framework
 ```
 
 ## 📋 What This Framework Provides
@@ -35,11 +41,19 @@ python setup_study.py "My Study" --user myuser
 
 ### **New Study Setup**
 ```bash
+# Clone framework temporarily
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git /tmp/study-framework
+cd /tmp/study-framework
+
 # Complete automated setup
 python setup_study.py "My Study" \
     --user myuser \
+    --base-dir /mnt/study \
     --db-username mydbuser \
     --db-password mydbpass
+
+# Clean up (optional)
+rm -rf /tmp/study-framework
 ```
 
 ### **Adding Custom Features**
@@ -127,14 +141,14 @@ class MyStudyDataProcessor(DataProcessor):
 ## 🔄 Update Workflow
 
 ### **When You Release Updates:**
-1. **Push changes** to your repository
+1. **Push changes** to the UbiWell repository
 2. **Users update** with `python update_core.py --study-name "My Study"`
 3. **Core improvements** are applied automatically
 4. **Custom code** stays intact
 
 ### **When Users Add Custom Features:**
 1. **Extend core classes** in their own files
-2. **Commit to their repository** (not yours)
+2. **Commit to their repository** (not the UbiWell repository)
 3. **Update core independently** when needed
 
 ## 📖 Documentation

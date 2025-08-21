@@ -320,8 +320,8 @@ print(db.list_collection_names())  # Should print collections
 ### **Development Setup**
 ```bash
 # Clone repository
-git clone https://github.com/your-org/study-framework-core.git
-cd study-framework-core
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
+cd ubiwell-study-backend-core
 
 # Install in development mode
 pip install -e .

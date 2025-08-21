@@ -117,7 +117,7 @@ ubiwell-study-backend-core/
 ### **1. Initial Setup**
 ```bash
 # Clone and setup new study
-git clone https://github.com/your-org/ubiwell-study-backend-core.git
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
 cd ubiwell-study-backend-core
 python setup_study.py "My Study" --user myuser
 ```

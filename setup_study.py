@@ -39,13 +39,47 @@ def run_command(command, check=True, capture_output=False):
         return False
 
 
-def check_anaconda():
-    """Check if Anaconda/Miniconda is installed."""
+def check_anaconda(base_dir="/mnt/study"):
+    """Check if Anaconda/Miniconda is installed, install if not found."""
     conda_path = shutil.which('conda')
     if not conda_path:
-        print("❌ Anaconda/Miniconda not found. Please install it first.")
-        print("Download from: https://docs.conda.io/en/latest/miniconda.html")
-        sys.exit(1)
+        print("❌ Anaconda/Miniconda not found.")
+        print("🔧 Installing Anaconda automatically...")
+        
+        # Create base directory if it doesn't exist
+        run_command(f"mkdir -p {base_dir}")
+        
+        # Download and install Anaconda
+        anaconda_url = "https://repo.anaconda.com/archive/Anaconda3-2023.09-0-Linux-x86_64.sh"
+        installer_path = "/tmp/anaconda_installer.sh"
+        
+        print("📥 Downloading Anaconda...")
+        run_command(f"wget {anaconda_url} -O {installer_path}")
+        
+        print(f"🔧 Installing Anaconda to {base_dir}/anaconda3...")
+        run_command(f"bash {installer_path} -b -p {base_dir}/anaconda3")
+        
+        # Add to PATH for current session
+        os.environ['PATH'] = f"{base_dir}/anaconda3/bin:{os.environ['PATH']}"
+        
+        # Add to system-wide profile for all users
+        profile_path = "/etc/profile.d/conda.sh"
+        conda_init = f"""#!/bin/bash
+# Added by study framework setup
+export PATH="{base_dir}/anaconda3/bin:$PATH"
+"""
+        
+        with open(profile_path, 'w') as f:
+            f.write(conda_init)
+        
+        # Make it executable
+        run_command(f"chmod +x {profile_path}")
+        
+        print(f"✅ Anaconda installed successfully at {base_dir}/anaconda3!")
+        print("💡 You may need to restart your terminal or run: source /etc/profile")
+        
+        # Update conda path
+        conda_path = f"{base_dir}/anaconda3/bin/conda"
     
     print(f"✅ Found conda at: {conda_path}")
     return conda_path
@@ -714,7 +748,7 @@ def main():
         sys.exit(1)
     
     # Check Anaconda installation
-    conda_path = check_anaconda()
+    conda_path = check_anaconda(args.base_dir)
     
     # Create conda environment
     env_name = create_conda_environment(args.study_name, args.python_version)
