@@ -1533,6 +1533,10 @@ def process_garmin_files():
         if config_file:
             os.environ['STUDY_CONFIG_FILE'] = str(config_file)
             print(f"Set STUDY_CONFIG_FILE to: {config_file}")
+            
+            # Reload the configuration with the new file
+            from study_framework_core.core.config import set_config_file
+            set_config_file(str(config_file))
         else:
             print("Warning: Could not find study_config.json. Using default configuration.")
     
