@@ -17,6 +17,7 @@ import argparse
 import subprocess
 import sys
 import os
+import shutil
 from pathlib import Path
 
 
@@ -96,6 +97,40 @@ def get_conda_path(study_path):
     return "conda"  # Fallback to conda in PATH
 
 
+def copy_core_framework(study_dir: Path, user: str):
+    """Copy the core framework package to the study directory."""
+    try:
+        # Get the path to the core framework
+        core_framework_dir = Path.cwd() / "study_framework_core"
+        study_core_dir = study_dir / "study_framework_core"
+        
+        if core_framework_dir.exists():
+            print(f"📦 Copying core framework to {study_core_dir}")
+            
+            # Remove existing core framework directory
+            if study_core_dir.exists():
+                shutil.rmtree(study_core_dir)
+            
+            # Copy the entire study_framework_core directory
+            shutil.copytree(core_framework_dir, study_core_dir, dirs_exist_ok=True)
+            
+            # Make sure the package is properly set up
+            init_file = study_core_dir / "__init__.py"
+            if not init_file.exists():
+                init_file.touch()
+            
+            # Set ownership to the study user
+            run_command(f"chown -R {user}:{user} {study_core_dir}")
+            
+            print(f"✅ Core framework copied successfully")
+        else:
+            print(f"❌ Error: Core framework directory not found: {core_framework_dir}")
+            
+    except Exception as e:
+        print(f"❌ Error copying core framework: {e}")
+        raise
+
+
 def get_env_name(study_path):
     """Get conda environment name from study path."""
     study_name = study_path.name
@@ -133,6 +168,10 @@ def update_core_framework(study_path, study_name=None):
     print("📦 Updating core package...")
     update_command = f"{conda_path} run -n {env_name} pip install --upgrade {Path.cwd()}/study_framework_core/"
     run_command(update_command)
+    
+    # Copy updated core framework files to study directory
+    print("📁 Copying updated core framework files...")
+    copy_core_framework(study_path, study_path.name)
     
     print("✅ Core framework updated successfully!")
     print()
