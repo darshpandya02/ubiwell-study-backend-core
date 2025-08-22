@@ -1514,7 +1514,6 @@ def process_garmin_files():
     # Set the STUDY_CONFIG_FILE environment variable if not already set
     if 'STUDY_CONFIG_FILE' not in os.environ:
         # Try to find the config file in common locations
-        import os
         from pathlib import Path
         
         # Look for config file in current directory or parent directories
