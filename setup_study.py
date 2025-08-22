@@ -39,112 +39,41 @@ def run_command(command, check=True, capture_output=False):
         return False
 
 
-def fix_conda_tos(base_dir="/mnt/study"):
-    """Fix conda Terms of Service issues."""
-    print("🔧 Fixing conda Terms of Service...")
-    try:
-        conda_path = f"{base_dir}/anaconda3/bin/conda"
-        run_command(f"{conda_path} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main", check=False)
-        run_command(f"{conda_path} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r", check=False)
-        print("✅ Conda Terms of Service fixed successfully")
-        return True
-    except Exception as e:
-        print(f"❌ Failed to fix conda ToS: {e}")
-        return False
-
-def check_anaconda(base_dir="/mnt/study"):
-    """Check if Anaconda/Miniconda is installed, install if not found."""
-    # Check if Anaconda is installed at the expected location
-    anaconda_dir = Path(base_dir) / "anaconda3"
-    conda_path = f"{base_dir}/anaconda3/bin/conda"
-    
-    if not anaconda_dir.exists() or not Path(conda_path).exists():
-        print("❌ Anaconda/Miniconda not found.")
-        print("🔧 Installing Anaconda automatically...")
-        
-        # Create base directory if it doesn't exist
-        run_command(f"mkdir -p {base_dir}")
-        
-        # Download and install Anaconda
-        anaconda_url = "https://repo.anaconda.com/archive/Anaconda3-2025.06-0-Linux-x86_64.sh"
-        installer_path = "/tmp/anaconda_installer.sh"
-        
-        print("📥 Downloading Anaconda...")
-        run_command(f"wget {anaconda_url} -O {installer_path}")
-        
-        print(f"🔧 Installing Anaconda to {base_dir}/anaconda3...")
-        run_command(f"bash {installer_path} -b -p {base_dir}/anaconda3")
-        
-        # Add to PATH for current session
-        os.environ['PATH'] = f"{base_dir}/anaconda3/bin:{os.environ['PATH']}"
-        
-        # Add to system-wide profile for all users
-        profile_path = "/etc/profile.d/conda.sh"
-        conda_init = f"""#!/bin/bash
-# Added by study framework setup
-export PATH="{base_dir}/anaconda3/bin:$PATH"
-"""
-        
-        with open(profile_path, 'w') as f:
-            f.write(conda_init)
-        
-        # Make it executable
-        run_command(f"chmod +x {profile_path}")
-        
-        # Accept Terms of Service for default channels
-        print("📋 Accepting Anaconda Terms of Service...")
-        run_command(f"{base_dir}/anaconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main")
-        run_command(f"{base_dir}/anaconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r")
-        
-        print(f"✅ Anaconda installed successfully at {base_dir}/anaconda3!")
-        print("💡 You may need to restart your terminal or run: source /etc/profile")
-        
-        # Update conda path
-        conda_path = f"{base_dir}/anaconda3/bin/conda"
+def check_anaconda():
+    """Check if Anaconda/Miniconda is installed."""
+    conda_path = shutil.which('conda')
+    if not conda_path:
+        print("❌ Anaconda/Miniconda not found. Please install it first.")
+        print("Download from: https://docs.conda.io/en/latest/miniconda.html")
+        sys.exit(1)
     
     print(f"✅ Found conda at: {conda_path}")
     return conda_path
 
 
-def create_conda_environment(study_name, python_version="3.9", base_dir="/mnt/study"):
+def create_conda_environment(study_name, python_version="3.9"):
     """Create a conda environment for the study."""
     env_name = f"{study_name.lower().replace(' ', '-')}-env"
     
     print(f"🔧 Creating conda environment: {env_name}")
     
-    # Get conda path
-    conda_path = f"{base_dir}/anaconda3/bin/conda"
-    
-    # Accept Terms of Service for default channels (in case they weren't accepted before)
-    print("📋 Ensuring Anaconda Terms of Service are accepted...")
-    try:
-        run_command(f"{conda_path} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main", check=False)
-        run_command(f"{conda_path} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r", check=False)
-        print("✅ Terms of Service accepted")
-    except Exception as e:
-        print(f"⚠️  Warning: Could not accept ToS automatically: {e}")
-        print("💡 This might be due to existing conda configuration")
-    
     # Check if environment already exists
-    env_exists = run_command(f"{conda_path} env list | grep {env_name}", check=False, capture_output=True)
+    env_exists = run_command(f"conda env list | grep {env_name}", check=False, capture_output=True)
     
     if env_exists:
         print(f"⚠️  Environment {env_name} already exists. Removing it...")
-        run_command(f"{conda_path} env remove -n {env_name} -y")
+        run_command(f"conda env remove -n {env_name} -y")
     
     # Create new environment
-    run_command(f"{conda_path} create -n {env_name} python={python_version} -y")
+    run_command(f"conda create -n {env_name} python={python_version} -y")
     
     print(f"✅ Created conda environment: {env_name}")
     return env_name
 
 
-def install_packages(env_name, study_path, base_dir="/mnt/study"):
+def install_packages(env_name, study_path):
     """Install required packages in the conda environment."""
     print(f"📦 Installing packages in {env_name}")
-    
-    # Get conda path
-    conda_path = f"{base_dir}/anaconda3/bin/conda"
     
     # Activate environment and install packages
     conda_packages = [
@@ -161,15 +90,15 @@ def install_packages(env_name, study_path, base_dir="/mnt/study"):
     
     for package in conda_packages:
         print(f"  Installing {package}...")
-        run_command(f"{conda_path} run -n {env_name} pip install {package}")
+        run_command(f"conda run -n {env_name} pip install {package}")
     
-    # Install the study framework core by copying files (not editable mode for production stability)
-    print("  Installing study-framework-core...")
-    run_command(f"{conda_path} run -n {env_name} pip install study_framework_core/")
+    # Install the study framework core in editable mode for easy updates
+    print("  Installing study-framework-core in editable mode...")
+    run_command(f"conda run -n {env_name} pip install -e .")
     
     # Install gunicorn
     print("  Installing gunicorn...")
-    run_command(f"{conda_path} run -n {env_name} pip install gunicorn")
+    run_command(f"conda run -n {env_name} pip install gunicorn")
     
     print("✅ All packages installed successfully")
 
@@ -223,9 +152,8 @@ def create_systemd_service(study_name, env_name, study_dir, user, base_dir):
     run_command(f"chown {user}:www-data {socket_dir}")
     run_command(f"chmod 755 {socket_dir}")
     
-    # Get conda environment path using full conda path
-    conda_path = f"{base_dir}/anaconda3/bin/conda"
-    conda_prefix = run_command(f"{conda_path} run -n {env_name} python -c 'import sys; print(sys.prefix)'", capture_output=True)
+    # Get conda environment path
+    conda_prefix = run_command(f"conda run -n {env_name} python -c 'import sys; print(sys.prefix)'", capture_output=True)
     
     # API Service (Priority #1 - Data Collection)
     api_service_content = f"""[Unit]
@@ -237,7 +165,6 @@ User={user}
 Group=www-data
 WorkingDirectory={study_dir}
 Environment="PATH={conda_prefix}/bin"
-Environment="STUDY_CONFIG_FILE={study_dir}/config/study_config.json"
 ExecStart={conda_prefix}/bin/gunicorn --workers 3 --bind unix:/var/sockets/{api_service_name}.sock -m 007 api_wsgi:app --access-logfile {study_dir}/logs/api_gunicorn_access.log --error-logfile {study_dir}/logs/api_gunicorn_error.log
 Restart=always
 RestartSec=5
@@ -263,7 +190,6 @@ User={user}
 Group=www-data
 WorkingDirectory={study_dir}
 Environment="PATH={conda_prefix}/bin"
-Environment="STUDY_CONFIG_FILE={study_dir}/config/study_config.json"
 ExecStart={conda_prefix}/bin/gunicorn --workers 2 --bind unix:/var/sockets/{internal_service_name}.sock -m 007 internal_wsgi:app --access-logfile {study_dir}/logs/internal_gunicorn_access.log --error-logfile {study_dir}/logs/internal_gunicorn_error.log
 Restart=always
 RestartSec=5
@@ -293,48 +219,43 @@ def create_nginx_config(study_name, api_service_name, internal_service_name):
     """Create nginx configuration with separate services."""
     nginx_config = f"""# {study_name} Nginx Configuration (Separate Services)
 
-server {{
-    listen 80;
-    server_name _;
+# API endpoints (Priority #1 - Data Collection)
+location /api/v1/ {{
+    include proxy_params;
+    proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
+}}
 
-    # API endpoints (Priority #1 - Data Collection)
-    location /api/v1/ {{
-        include proxy_params;
-        proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
-    }}
+# Internal web dashboard (Priority #2 - Dashboard)
+location /internal_web {{
+    # Allow specific IP ranges (customize as needed)
+    allow 129.10.0.0/16;
+    allow 129.10.128.0/17;
+    allow 129.10.64.0/18;
+    allow 155.33.0.0/16;
+    allow 155.33.0.0/17;
+    allow 10.0.0.0/8;
+    deny all;
 
-    # Internal web dashboard (Priority #2 - Dashboard)
-    location /internal_web {{
-        # Allow all IPs for testing (customize as needed for production)
-        # allow 129.10.0.0/16;
-        # allow 129.10.128.0/17;
-        # allow 129.10.64.0/18;
-        # allow 155.33.0.0/16;
-        # allow 155.33.0.0/17;
-        # allow 10.0.0.0/8;
-        # deny all;
+    include proxy_params;
+    proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
+}}
 
-        include proxy_params;
-        proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
-    }}
+# Health check endpoints
+location /api/health {{
+    include proxy_params;
+    proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
+}}
 
-    # Health check endpoints
-    location /api/health {{
-        include proxy_params;
-        proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
-    }}
+location /internal/health {{
+    include proxy_params;
+    proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
+}}
 
-    location /internal/health {{
-        include proxy_params;
-        proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
-    }}
-
-    # Static files
-    location /static/ {{
-        alias /mnt/study/{study_name.lower().replace(' ', '-')}/static/;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }}
+# Static files
+location /static/ {{
+    alias /mnt/study/{study_name.lower().replace(' ', '-')}/static/;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
 }}
 """
     
@@ -362,7 +283,7 @@ server {{
     return nginx_file
 
 
-def create_wsgi_files(study_dir, study_name, user):
+def create_wsgi_files(study_dir, study_name):
     """Create separate WSGI files for API and internal web."""
     
     # API WSGI file (Priority #1 - Data Collection)
@@ -372,83 +293,34 @@ API WSGI entry point for {study_name} (Data Collection - Priority #1)
 \"\"\"
 
 import sys
-import os
 from pathlib import Path
 
 # Add the study directory to Python path
 study_path = Path(__file__).parent
 sys.path.insert(0, str(study_path))
 
-# Debug: Print current working directory and Python path
-print(f"Current working directory: {{os.getcwd()}}")
-print(f"Study path: {{study_path}}")
-print(f"Python path: {{sys.path}}")
+from study_framework_core.core.config import set_config_file
+from flask import Flask
+from flask_restful import Api
+from study_framework_core.core.api import CoreAPIEndpoints
 
-# Check if core framework exists
-core_path = study_path / "study_framework_core"
-print(f"Core framework path exists: {{core_path.exists()}}")
+# Load configuration
+config_file = study_path / "config" / "study_config.json"
+set_config_file(str(config_file))
 
-try:
-    print("Attempting to import study_framework_core.core.config...")
-    from study_framework_core.core.config import set_config_file
-    print("✅ Successfully imported config")
-    
-    print("Attempting to import Flask...")
-    from flask import Flask
-    print("✅ Successfully imported Flask")
-    
-    print("Attempting to import flask_restful...")
-    from flask_restful import Api
-    print("✅ Successfully imported flask_restful")
-    
-    print("Attempting to import CoreAPIEndpoints...")
-    from study_framework_core.core.api import CoreAPIEndpoints
-    print("✅ Successfully imported CoreAPIEndpoints")
-    
-    # Load configuration
-    config_file = study_path / "config" / "study_config.json"
-    print(f"Config file path: {{config_file}}")
-    print(f"Config file exists: {{config_file.exists()}}")
-    set_config_file(str(config_file))
-    print("✅ Configuration loaded")
-    
-    # Create API-only app
-    app = Flask(__name__)
-    api = Api(app, prefix='/api/v1')
-    print("✅ Flask app created")
-    
-    # Get auth key from config
-    from study_framework_core.core.config import get_config
-    config = get_config()
-    auth_key = config.security.auth_key
-    print("✅ Auth key retrieved from config")
-    
-    # Setup core API routes
-    core_api = CoreAPIEndpoints(api, auth_key)
-    print("✅ Core API routes setup")
-    
-    # Add health check endpoint
-    @app.route('/health')
-    def health_check():
-        return dict(status='healthy', service='study-framework-api')
-    
-    print("✅ API WSGI setup complete")
-        
-except Exception as e:
-    print(f"❌ Error in API WSGI: {{e}}")
-    import traceback
-    traceback.print_exc()
-    # Create a minimal app for debugging
-    from flask import Flask
-    app = Flask(__name__)
-    
-    @app.route('/health')
-    def health_check():
-        return dict(status='error', message=str(e))
-    
-    @app.route('/')
-    def debug():
-        return dict(status='debug', error=str(e))
+# Create API-only app
+app = Flask(__name__)
+api = Api(app, prefix='/api/v1')
+
+# Setup core API routes
+core_api = CoreAPIEndpoints()
+core_api.api = api
+core_api.setup_core_routes()
+
+# Add health check endpoint
+@app.route('/health')
+def health_check():
+    return {{'status': 'healthy', 'service': 'study-framework-api'}}
 
 if __name__ == "__main__":
     app.run()
@@ -468,99 +340,32 @@ Internal Web WSGI entry point for {study_name} (Dashboard - Priority #2)
 \"\"\"
 
 import sys
-import os
 from pathlib import Path
 
 # Add the study directory to Python path
 study_path = Path(__file__).parent
 sys.path.insert(0, str(study_path))
 
-# Debug: Print current working directory and Python path
-print(f"Current working directory: {{os.getcwd()}}")
-print(f"Study path: {{study_path}}")
-print(f"Python path: {{sys.path}}")
+from study_framework_core.core.config import set_config_file
+from study_framework_core.core.internal_web import InternalWebBase
+from study_framework_core.core.dashboard import DashboardBase
 
-# Check if core framework exists
-core_path = study_path / "study_framework_core"
-print(f"Core framework path exists: {{core_path.exists()}}")
+# Load configuration
+config_file = study_path / "config" / "study_config.json"
+set_config_file(str(config_file))
 
-try:
-    print("Attempting to import study_framework_core.core.config...")
-    from study_framework_core.core.config import set_config_file
-    print("✅ Successfully imported config")
-    
-    print("Attempting to import InternalWebBase...")
-    from study_framework_core.core.internal_web import InternalWebBase
-    print("✅ Successfully imported InternalWebBase")
-    
-    print("Attempting to import DashboardBase...")
-    from study_framework_core.core.dashboard import DashboardBase
-    print("✅ Successfully imported DashboardBase")
-    
-    # Load configuration
-    config_file = study_path / "config" / "study_config.json"
-    print(f"Config file path: {{config_file}}")
-    print(f"Config file exists: {{config_file.exists()}}")
-    set_config_file(str(config_file))
-    print("✅ Configuration loaded")
-    
-    # Create internal web app with multiple template directories
-    from flask import Flask
-    app = Flask(__name__)
-    
-    # Configure template directories (core first, then study-specific for overrides)
-    core_templates = study_path / "study_framework_core" / "templates"
-    study_templates = study_path / "templates"
-    
-    # Create study templates directory if it doesn't exist
-    study_templates.mkdir(exist_ok=True)
-    
-    # Set up template loader to look in both directories
-    from jinja2 import ChoiceLoader, FileSystemLoader
-    app.jinja_loader = ChoiceLoader([
-        FileSystemLoader(str(study_templates)),  # Study-specific templates (override core)
-        FileSystemLoader(str(core_templates)),   # Core templates (fallback)
-    ])
-    
-    print("✅ Flask app created with dual template directories")
-    print(f"   Core templates: {core_templates}")
-    print(f"   Study templates: {study_templates}")
-    
-    # Create a concrete dashboard implementation
-    class SimpleDashboard(DashboardBase):
-        def _get_custom_columns(self):
-            return []  # No custom columns for basic setup
-        
-        def generate_custom_row_data(self, user_data, date_str):
-            return dict()  # No custom data for basic setup
-    
-    # Setup internal web routes
-    dashboard = SimpleDashboard()
-    internal_web = InternalWebBase(app, dashboard)
-    print("✅ Internal web routes setup")
-    
-    # Add health check endpoint
-    @app.route('/health')
-    def health_check():
-        return dict(status='healthy', service='study-framework-internal')
-    
-    print("✅ Internal Web WSGI setup complete")
-        
-except Exception as e:
-    print(f"❌ Error in Internal Web WSGI: {{e}}")
-    import traceback
-    traceback.print_exc()
-    # Create a minimal app for debugging
-    from flask import Flask
-    app = Flask(__name__)
-    
-    @app.route('/health')
-    def health_check():
-        return dict(status='error', message=str(e))
-    
-    @app.route('/')
-    def debug():
-        return dict(status='debug', error=str(e))
+# Create internal web app
+from flask import Flask
+app = Flask(__name__)
+
+# Setup internal web routes
+dashboard = DashboardBase()
+internal_web = InternalWebBase(app, dashboard)
+
+# Add health check endpoint
+@app.route('/health')
+def health_check():
+    return {{'status': 'healthy', 'service': 'study-framework-internal'}}
 
 if __name__ == "__main__":
     app.run()
@@ -573,11 +378,9 @@ if __name__ == "__main__":
     with open(internal_wsgi_file, 'w') as f:
         f.write(internal_wsgi_content)
     
-    # Make both executable and set ownership
+    # Make both executable
     run_command(f"chmod +x {api_wsgi_file}")
     run_command(f"chmod +x {internal_wsgi_file}")
-    run_command(f"chown {user}:{user} {api_wsgi_file}")
-    run_command(f"chown {user}:{user} {internal_wsgi_file}")
     
     return api_wsgi_file, internal_wsgi_file
 
@@ -630,62 +433,29 @@ def create_sample_config_files(study_dir: Path):
     print(f"✅ Created sample config files in {study_dir}")
 
 
-def create_admin_user(study_dir: Path, db_username: str, db_password: str, db_host: str, db_port: str, db_name: str, base_dir: str = "/mnt/study"):
+def create_admin_user(study_dir: Path, db_username: str, db_password: str, db_host: str, db_port: str, db_name: str):
     """Create admin user for internal web access."""
     try:
-        # Use conda environment to run the admin user creation
-        conda_path = f"{base_dir}/anaconda3/bin/conda"
-        study_name = study_dir.name
-        env_name = f"{study_name}-env"
+        # Set up environment for database connection
+        os.environ['STUDY_CONFIG_FILE'] = str(study_dir / "config" / "study_config.json")
         
-        # Create a Python script to create the admin user
-        admin_script = study_dir / "create_admin.py"
-        admin_script_content = f"""#!/usr/bin/env python3
-import os
-import sys
-from pathlib import Path
-
-# Set up environment
-os.environ['STUDY_CONFIG_FILE'] = str(Path(__file__).parent / "config" / "study_config.json")
-sys.path.insert(0, str(Path(__file__).parent))
-
-try:
-    from study_framework_core.core.handlers import create_admin_user
-    result = create_admin_user()
-    
-    if result['success']:
-        print(f"SUCCESS:{{result['username']}}:{{result['password']}}")
-    else:
-        print(f"ERROR:{{result['error']}}")
-except Exception as e:
-    print(f"EXCEPTION:{{str(e)}}")
-"""
+        # Import after environment setup
+        import sys
+        sys.path.insert(0, str(study_dir))
         
-        with open(admin_script, 'w') as f:
-            f.write(admin_script_content)
+        from study_framework_core.core.handlers import create_admin_user
         
-        # Run the script in the conda environment
-        result = run_command(f"{conda_path} run -n {env_name} python {admin_script}", capture_output=True)
+        # Create admin user
+        result = create_admin_user()
         
-        # Parse the result
-        if result and result.startswith("SUCCESS:"):
-            parts = result.split(":")
-            username = parts[1]
-            password = parts[2]
+        if result['success']:
             print(f"✅ Admin user created successfully!")
-            print(f"   Username: {username}")
-            print(f"   Password: {password}")
+            print(f"   Username: {result['username']}")
+            print(f"   Password: {result['password']}")
             print(f"   ⚠️  Please save this password securely!")
-            
-            # Clean up the script
-            admin_script.unlink()
-            return password
+            return result['password']
         else:
-            error_msg = result.replace("ERROR:", "").replace("EXCEPTION:", "") if result else "Unknown error"
-            print(f"❌ Failed to create admin user: {error_msg}")
-            
-            # Clean up the script
-            admin_script.unlink()
+            print(f"❌ Failed to create admin user: {result['error']}")
             return None
             
     except Exception as e:
@@ -709,16 +479,6 @@ def copy_processing_scripts(study_dir: Path):
                 print(f"✅ Copied script: {script_file.name}")
         else:
             print(f"⚠️  Warning: Core scripts directory not found: {core_scripts_dir}")
-        
-        # Copy JAR file for Garmin processing
-        jar_source = Path(__file__).parent / "study_framework_core" / "core" / "processing" / "load_files" / "fit-processing-cli.jar"
-        jar_dest = study_scripts_dir / "fit-processing-cli.jar"
-        
-        if jar_source.exists():
-            shutil.copy2(jar_source, jar_dest)
-            print(f"✅ Copied JAR file: fit-processing-cli.jar")
-        else:
-            print(f"⚠️  Warning: JAR file not found: {jar_source}")
             
     except Exception as e:
         print(f"⚠️  Warning: Could not copy processing scripts: {e}")
@@ -736,38 +496,8 @@ def make_scripts_executable(study_dir: Path):
         print(f"⚠️  Warning: Could not make scripts executable: {e}")
 
 
-def copy_core_framework(study_dir: Path, user: str):
-    """Copy the core framework package to the study directory."""
-    try:
-        # Get the path to the core framework
-        core_framework_dir = Path(__file__).parent / "study_framework_core"
-        study_core_dir = study_dir / "study_framework_core"
-        
-        if core_framework_dir.exists():
-            print(f"📦 Copying core framework to {study_core_dir}")
-            
-            # Copy the entire study_framework_core directory
-            shutil.copytree(core_framework_dir, study_core_dir, dirs_exist_ok=True)
-            
-            # Make sure the package is properly set up
-            init_file = study_core_dir / "__init__.py"
-            if not init_file.exists():
-                init_file.touch()
-            
-            # Set ownership immediately after copying
-            run_command(f"chown -R {user}:{user} {study_core_dir}")
-            
-            print(f"✅ Core framework copied successfully")
-        else:
-            print(f"❌ Error: Core framework directory not found: {core_framework_dir}")
-            
-    except Exception as e:
-        print(f"❌ Error copying core framework: {e}")
-        raise
-
-
 def create_study_config(study_name: str, study_dir: Path, db_username: str, db_password: str, 
-                       db_host: str, db_port: str, db_name: str, auth_key: str, announcement_key: str, user: str) -> Dict[str, Any]:
+                       db_host: str, db_port: str, db_name: str, auth_key: str, announcement_key: str) -> Dict[str, Any]:
     """Create study configuration file."""
     config_content = {
         "study_name": study_name,
@@ -816,16 +546,13 @@ def create_study_config(study_name: str, study_dir: Path, db_username: str, db_p
     with open(config_file, 'w') as f:
         json.dump(config_content, f, indent=2)
     
-    # Set ownership
-    run_command(f"chown {user}:{user} {config_file}")
-    
     return config_content
 
 
 def create_requirements_file(study_dir):
     """Create requirements.txt file."""
     requirements_content = """# Study Framework Core
-git+https://github.com/UbiWell/ubiwell-study-backend-core.git
+git+https://github.com/your-org/study-framework-core.git
 
 # Flask and extensions
 flask>=2.0.0
@@ -939,17 +666,14 @@ sudo systemctl restart {service_name}
     return readme_file
 
 
-def update_core_framework(study_name, base_dir="/mnt/study"):
+def update_core_framework(study_name):
     """Update the core framework to the latest version."""
     env_name = f"{study_name.lower().replace(' ', '-')}-env"
     
     print(f"🔄 Updating core framework in {env_name}")
     
-    # Get conda path
-    conda_path = f"{base_dir}/anaconda3/bin/conda"
-    
     # Update the core package
-    run_command(f"{conda_path} run -n {env_name} pip install --upgrade -e study_framework_core/")
+    run_command(f"conda run -n {env_name} pip install --upgrade -e .")
     
     print("✅ Core framework updated successfully!")
     print("💡 You may need to restart the services:")
@@ -977,7 +701,7 @@ def main():
     
     # Handle update mode
     if args.update:
-        update_core_framework(args.study_name, args.base_dir)
+        update_core_framework(args.study_name)
         return
     
     print(f"🚀 Setting up study: {args.study_name}")
@@ -989,35 +713,26 @@ def main():
         print("❌ This script must be run as root (use sudo)")
         sys.exit(1)
     
-    # Fix conda Terms of Service issues if Anaconda is installed
-    anaconda_dir = Path(args.base_dir) / "anaconda3"
-    if anaconda_dir.exists():
-        print("🔧 Checking conda Terms of Service...")
-        fix_conda_tos(args.base_dir)
-    
     # Check Anaconda installation
-    conda_path = check_anaconda(args.base_dir)
+    conda_path = check_anaconda()
     
     # Create conda environment
-    env_name = create_conda_environment(args.study_name, args.python_version, args.base_dir)
+    env_name = create_conda_environment(args.study_name, args.python_version)
     
     # Create directory structure
     study_dir = create_directory_structure(args.study_name, args.base_dir, args.user)
     
-    # Copy core framework to study directory
-    copy_core_framework(study_dir, args.user)
-    
     # Install packages
-    install_packages(env_name, Path.cwd(), args.base_dir)
+    install_packages(env_name, Path.cwd())
     
-    # Create WSGI files first (needed for systemd services)
-    api_wsgi_file, internal_wsgi_file = create_wsgi_files(study_dir, args.study_name, args.user)
-    
-    # Create systemd services (after WSGI files exist)
+    # Create systemd services
     api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.base_dir)
     
-    # Create nginx configuration (after services are created)
+    # Create nginx configuration
     nginx_file = create_nginx_config(args.study_name, api_service_name, internal_service_name)
+    
+    # Create WSGI files
+    api_wsgi_file, internal_wsgi_file = create_wsgi_files(study_dir, args.study_name)
     
     # Create sample config files
     create_sample_config_files(study_dir)
@@ -1035,8 +750,7 @@ def main():
         args.db_port or '27017',
         args.db_name,
         args.auth_key or 'your-auth-key',
-        args.announcement_key or 'study123',
-        args.user
+        args.announcement_key or 'study123'
     )
     
     # Create admin user for internal web access
@@ -1046,33 +760,13 @@ def main():
         args.db_password or 'study_password',
         args.db_host or 'localhost',
         args.db_port or '27017',
-        args.db_name,
-        args.base_dir
+        args.db_name
     )
     requirements_file = create_requirements_file(study_dir)
-    readme_file = create_readme(study_dir, args.study_name, api_service_name)
+    readme_file = create_readme(study_dir, args.study_name, service_name)
     
-    # Set proper ownership for all created files and directories
-    print(f"🔐 Setting ownership for all files to {args.user}:{args.user}")
-    
-    # Set ownership for study directory and all contents
+    # Set proper ownership
     run_command(f"chown -R {args.user}:{args.user} {study_dir}")
-    
-    # Set ownership for Anaconda installation (if it was created)
-    anaconda_dir = Path(args.base_dir) / "anaconda3"
-    if anaconda_dir.exists():
-        print(f"🔐 Setting ownership for Anaconda installation")
-        run_command(f"chown -R {args.user}:{args.user} {anaconda_dir}")
-    
-    # Set ownership for base directory (but keep root for system files)
-    base_dir = Path(args.base_dir)
-    if base_dir.exists():
-        # Set ownership for study-related directories only
-        for item in base_dir.iterdir():
-            if item.name.startswith(f"{args.study_name.lower().replace(' ', '-')}"):
-                run_command(f"chown -R {args.user}:{args.user} {item}")
-    
-    print(f"✅ Ownership set successfully")
     
     print(f"\n✅ Study setup completed successfully with separate services!")
     print(f"📁 Study directory: {study_dir}")

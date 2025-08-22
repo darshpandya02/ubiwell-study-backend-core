@@ -284,9 +284,8 @@ class DataProcessor:
             bool: True if processing was successful, False otherwise
         """
         try:
-            # Check if JAR file exists (should be in the study's scripts directory)
-            study_dir = Path(self.config.paths.base_dir)
-            jar_path = study_dir / "scripts" / "fit-processing-cli.jar"
+            # Check if JAR file exists (in the core framework)
+            jar_path = Path(__file__).parent / "processing" / "load_files" / "fit-processing-cli.jar"
             if not jar_path.exists():
                 self.logger.error(f"JAR file not found: {jar_path}")
                 return False
