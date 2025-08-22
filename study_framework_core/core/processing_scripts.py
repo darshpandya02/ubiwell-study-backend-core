@@ -304,6 +304,11 @@ class DataProcessor:
             
             output_path.mkdir(parents=True, exist_ok=True)
             
+            # The JAR file creates a subdirectory with the FIT file name + _csv_out
+            # So we need to look for CSV files in that subdirectory
+            fit_filename = input_path.stem  # Get filename without extension
+            csv_subdirectory = output_path / f"{fit_filename}_csv_out"
+            
             self.logger.info(f"Processing Garmin FIT file: {input_file}")
             
             # Build the Java command
@@ -333,11 +338,17 @@ class DataProcessor:
                 check=False
             )
             
+            # Debug: Check what the JAR file output
+            self.logger.info(f"JAR stdout: {result.stdout}")
+            if result.stderr:
+                self.logger.info(f"JAR stderr: {result.stderr}")
+            self.logger.info(f"JAR return code: {result.returncode}")
+            
             if result.returncode == 0:
                 self.logger.info(f"Successfully converted FIT to CSV: {input_file}")
                 
                 # Now process the CSV files and load into MongoDB
-                csv_success = self._process_garmin_csv_files(user, output_path)
+                csv_success = self._process_garmin_csv_files(user, csv_subdirectory)
                 
                 if csv_success:
                     self.logger.info(f"Successfully loaded Garmin data to MongoDB for: {input_file}")
@@ -370,6 +381,10 @@ class DataProcessor:
             if not csv_directory.is_dir():
                 self.logger.error(f"Path is not a directory: {csv_directory}")
                 return False
+            
+            # Debug: List all files in the directory
+            all_files = list(csv_directory.glob("*"))
+            self.logger.info(f"All files in directory: {[f.name for f in all_files]}")
             
             records = []
             
