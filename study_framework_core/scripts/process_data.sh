@@ -9,6 +9,7 @@ STUDY_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Set environment variables
 export PYTHONPATH="${STUDY_DIR}:${PYTHONPATH}"
+export STUDY_CONFIG_FILE="${STUDY_DIR}/config/study_config.json"
 
 # Function to show usage
 show_usage() {

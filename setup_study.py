@@ -237,6 +237,7 @@ User={user}
 Group=www-data
 WorkingDirectory={study_dir}
 Environment="PATH={conda_prefix}/bin"
+Environment="STUDY_CONFIG_FILE={study_dir}/config/study_config.json"
 ExecStart={conda_prefix}/bin/gunicorn --workers 3 --bind unix:/var/sockets/{api_service_name}.sock -m 007 api_wsgi:app --access-logfile {study_dir}/logs/api_gunicorn_access.log --error-logfile {study_dir}/logs/api_gunicorn_error.log
 Restart=always
 RestartSec=5
@@ -262,6 +263,7 @@ User={user}
 Group=www-data
 WorkingDirectory={study_dir}
 Environment="PATH={conda_prefix}/bin"
+Environment="STUDY_CONFIG_FILE={study_dir}/config/study_config.json"
 ExecStart={conda_prefix}/bin/gunicorn --workers 2 --bind unix:/var/sockets/{internal_service_name}.sock -m 007 internal_wsgi:app --access-logfile {study_dir}/logs/internal_gunicorn_access.log --error-logfile {study_dir}/logs/internal_gunicorn_error.log
 Restart=always
 RestartSec=5
