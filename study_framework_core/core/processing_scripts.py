@@ -373,7 +373,11 @@ class DataProcessor:
             
             records = []
             
-            for csv_file in csv_directory.glob("*.csv"):
+            # List all CSV files found
+            csv_files = list(csv_directory.glob("*.csv"))
+            self.logger.info(f"Found {len(csv_files)} CSV files: {[f.name for f in csv_files]}")
+            
+            for csv_file in csv_files:
                 self.logger.info(f"Processing CSV file: {csv_file}")
                 try:
                     if "ACCELEROMETER" in csv_file.name:
@@ -428,6 +432,7 @@ class DataProcessor:
                     self.logger.error(f"Error reading {csv_file.name}: {e}")
             
             # Group records by collection and insert into MongoDB
+            self.logger.info(f"Total records created: {len(records)}")
             collections_records = {}
             for record in records:
                 if record:
@@ -437,6 +442,10 @@ class DataProcessor:
                         collections_records[collection_name].append(record_data)
                     else:
                         collections_records[collection_name] = [record_data]
+            
+            self.logger.info(f"Records grouped by collection: {list(collections_records.keys())}")
+            for collection_name, record_list in collections_records.items():
+                self.logger.info(f"  {collection_name}: {len(record_list)} records")
             
             # Insert records into MongoDB
             for collection_name, record_list in collections_records.items():
