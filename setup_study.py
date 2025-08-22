@@ -709,6 +709,16 @@ def copy_processing_scripts(study_dir: Path):
                 print(f"✅ Copied script: {script_file.name}")
         else:
             print(f"⚠️  Warning: Core scripts directory not found: {core_scripts_dir}")
+        
+        # Copy JAR file for Garmin processing
+        jar_source = Path(__file__).parent / "study_framework_core" / "core" / "processing" / "load_files" / "fit-processing-cli.jar"
+        jar_dest = study_scripts_dir / "fit-processing-cli.jar"
+        
+        if jar_source.exists():
+            shutil.copy2(jar_source, jar_dest)
+            print(f"✅ Copied JAR file: fit-processing-cli.jar")
+        else:
+            print(f"⚠️  Warning: JAR file not found: {jar_source}")
             
     except Exception as e:
         print(f"⚠️  Warning: Could not copy processing scripts: {e}")

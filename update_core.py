@@ -131,6 +131,33 @@ def copy_core_framework(study_dir: Path, user: str):
         raise
 
 
+def copy_jar_file(study_dir: Path, user: str):
+    """Copy the JAR file for Garmin processing to the study's scripts directory."""
+    try:
+        # Get the path to the JAR file in the core framework
+        jar_source = Path.cwd() / "study_framework_core" / "core" / "processing" / "load_files" / "fit-processing-cli.jar"
+        jar_dest = study_dir / "scripts" / "fit-processing-cli.jar"
+        
+        if jar_source.exists():
+            print(f"📦 Copying JAR file to {jar_dest}")
+            
+            # Ensure scripts directory exists
+            jar_dest.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Copy the JAR file
+            shutil.copy2(jar_source, jar_dest)
+            
+            # Set ownership to the study user
+            run_command(f"chown {user}:{user} {jar_dest}")
+            
+            print(f"✅ JAR file copied successfully")
+        else:
+            print(f"⚠️  Warning: JAR file not found: {jar_source}")
+            
+    except Exception as e:
+        print(f"⚠️  Warning: Could not copy JAR file: {e}")
+
+
 def get_env_name(study_path):
     """Get conda environment name from study path."""
     study_name = study_path.name
@@ -172,6 +199,10 @@ def update_core_framework(study_path, study_name=None):
     # Copy updated core framework files to study directory
     print("📁 Copying updated core framework files...")
     copy_core_framework(study_path, study_path.name)
+    
+    # Copy JAR file for Garmin processing
+    print("📦 Copying JAR file for Garmin processing...")
+    copy_jar_file(study_path, study_path.name)
     
     print("✅ Core framework updated successfully!")
     print()
