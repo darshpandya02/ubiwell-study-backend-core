@@ -93,7 +93,7 @@ class DashboardBase(ABC):
             date_timestamp = int(datetime.now().timestamp())
         
         # Get daily summary for the specified date
-        daily_summary = db['daily_summaries'].find_one({'uid': uid, "date": date_timestamp})
+        daily_summary = db[config.collections.DAILY_SUMMARY].find_one({'uid': uid, "date": date_timestamp})
         
         # Check for daily diary file
         daily_diary_exists = self._check_daily_diary(uid, date_str, config)
@@ -104,7 +104,7 @@ class DashboardBase(ABC):
             'garmin_worn': 0.0,
             'garmin_on': 0.0,
             'distance_traveled': 0.0,
-            'details': f"<a href='/internal_web/dashboard/view/{config.security.auth_key}/{uid}/{date_str}'>Details</a>"
+            'details': f"<a href='/internal_web/dashboard/view/{uid}/{date_str}'>Details</a>"
         }
         
         if daily_summary:
@@ -205,7 +205,7 @@ class DashboardBase(ABC):
             most_recent_date = datetime.now().date().strftime("%m-%d-%y")
             
             # Don't show next date if it's today or future
-            if current_date >= datetime.now().date() - timedelta(days=1):
+            if current_date.date() >= datetime.now().date() - timedelta(days=1):
                 next_date = None
         except ValueError:
             previous_date = None

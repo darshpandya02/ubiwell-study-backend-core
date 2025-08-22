@@ -3,10 +3,11 @@
 Upload Test Data Script
 
 This script uploads test data from a local machine to the server.
+The user must already exist on the server (created via test_pipeline_step_by_step.py).
 Run this from your local machine to upload the test data.
 
 Usage:
-    python upload_test_data.py --server http://your-server.com --user test130
+    python upload_test_data.py --server http://your-server.com --user test130 --token YOUR_AUTH_TOKEN
 """
 
 import os
@@ -24,11 +25,11 @@ from typing import Dict, List, Optional
 class TestDataUploader:
     """Upload test data to the server."""
     
-    def __init__(self, server_url: str, user_id: str):
+    def __init__(self, server_url: str, user_id: str, auth_token: str):
         self.server_url = server_url.rstrip('/')
         self.user_id = user_id
+        self.auth_token = auth_token
         self.test_data_dir = Path("test_data")
-        self.user_credentials = None
         
     def log(self, message: str, level: str = "INFO"):
         """Log messages with timestamp."""
@@ -86,65 +87,40 @@ class TestDataUploader:
         
         return True
     
-    def create_test_user(self) -> bool:
-        """Create test user on the server."""
-        self.log("Creating test user on server...")
-        
-        try:
-            # Call the user creation endpoint
-            url = f"{self.server_url}/internal_web/create_user"
-            data = {
-                'uid': self.user_id,
-                'email': f"{self.user_id}@test.com"
-            }
-            
-            response = requests.post(url, json=data, timeout=30)
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get('success', False):
-                    self.user_credentials = result.get('user', {})
-                    self.log(f"✅ Created user: {self.user_id}")
-                    self.log(f"  Study Password: {self.user_credentials.get('study_pass', 'N/A')}")
-                    self.log(f"  Garmin Password: {self.user_credentials.get('garmin_pass', 'N/A')}")
-                    self.log(f"  UID Code: {self.user_credentials.get('uid_code', 'N/A')}")
-                    return True
-                else:
-                    self.log(f"❌ Failed to create user: {result.get('error', 'Unknown error')}", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ Server error: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"❌ Error creating user: {e}", "ERROR")
-            return False
+
     
     def upload_file(self, file_path: Path) -> bool:
         """Upload a single file to the server."""
-        if not self.user_credentials:
-            self.log("❌ No user credentials available", "ERROR")
-            return False
-        
         try:
-            url = f"{self.server_url}/api/v1/upload_file"
+            url = f"{self.server_url}/api/v1/data/upload"
             
             with open(file_path, 'rb') as f:
                 files = {'file': (file_path.name, f, 'application/octet-stream')}
                 data = {
                     'uid': self.user_id,
-                    'token': self.user_credentials['study_pass']
+                    'auth_key': self.auth_token
                 }
                 
                 response = requests.post(url, files=files, data=data, timeout=60)
                 
                 if response.status_code == 200:
-                    result = response.json()
-                    if result.get('success', False):
-                        self.log(f"✅ Uploaded: {file_path.name}")
-                        return True
-                    else:
-                        self.log(f"❌ Upload failed: {result.get('error', 'Unknown error')}")
+                    try:
+                        result = response.json()
+                        self.log(f"Response: {result}")  # Debug: show actual response
+                        
+                        # Check for different possible success indicators
+                        if (result.get('info') == 'upload successful' or 
+                            result.get('status') == 'success' or
+                            result.get('message') == 'upload successful' or
+                            (result.get('message') and result['message'].get('info') == 'upload successful')):
+                            self.log(f"✅ Uploaded: {file_path.name}")
+                            return True
+                        else:
+                            self.log(f"❌ Upload failed: {result}")
+                            return False
+                    except Exception as e:
+                        self.log(f"❌ Error parsing response: {e}")
+                        self.log(f"Raw response: {response.text}")
                         return False
                 else:
                     self.log(f"❌ Upload failed with status {response.status_code}: {response.text}")
@@ -194,7 +170,6 @@ class TestDataUploader:
         steps = [
             ("Check prerequisites", self.check_prerequisites),
             ("Unzip test data", self.unzip_test_data),
-            ("Create test user", self.create_test_user),
             ("Upload all files", self.upload_all_files),
         ]
         
@@ -207,7 +182,7 @@ class TestDataUploader:
         
         self.log("\n" + "=" * 60)
         self.log("Upload completed successfully!")
-        self.log(f"User {self.user_id} has been created and data uploaded.")
+        self.log(f"Data uploaded for user {self.user_id}.")
         self.log("You can now run the processing script on the server.")
         
         # Ask user if they want to cleanup local files
@@ -225,7 +200,8 @@ def main():
     """Main function to run the upload."""
     parser = argparse.ArgumentParser(description='Upload test data to server')
     parser.add_argument('--server', required=True, help='Server URL (e.g., http://your-server.com)')
-    parser.add_argument('--user', default='test130', help='User ID for test data (default: test130)')
+    parser.add_argument('--user', default='test130', help='User ID for test data (must already exist on server, default: test130)')
+    parser.add_argument('--token', required=True, help='Authentication token for the user')
     parser.add_argument('--cleanup', action='store_true', help='Automatically cleanup local files after upload')
     
     args = parser.parse_args()
@@ -234,6 +210,7 @@ def main():
     print("=" * 40)
     print(f"Server: {args.server}")
     print(f"User ID: {args.user}")
+    print(f"Auth Token: {args.token[:10]}..." if len(args.token) > 10 else f"Auth Token: {args.token}")
     print()
     
     # Check if test file exists
@@ -241,10 +218,13 @@ def main():
     if not test_file.exists():
         print(f"❌ Error: test_file.zip not found in current directory")
         print("Please place test_file.zip in the same directory as this script.")
+        print("\nWorkflow:")
+        print("1. First run test_pipeline_step_by_step.py on the server to create the user")
+        print("2. Then run this script from your local machine to upload data")
         return False
     
     # Create and run uploader
-    uploader = TestDataUploader(args.server, args.user)
+    uploader = TestDataUploader(args.server, args.user, args.token)
     success = uploader.run_upload()
     
     if args.cleanup and success:

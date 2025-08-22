@@ -20,7 +20,7 @@ from bson import ObjectId
 from study_framework_core.core.config import get_config
 
 # File extensions allowed for upload
-ALLOWED_EXTENSIONS = set(['db', 'dbr', 'dbre', 'zip', 'mov', 'mp4', 'txt', "json", ".fit"])
+ALLOWED_EXTENSIONS = set(['db', 'dbr', 'dbre', 'zip', 'mov', 'mp4', 'txt', "json", "fit"])
 
 def current_milli_time():
     """Get current time in milliseconds."""
@@ -35,10 +35,18 @@ def get_db_client():
     config = get_config()
     from pymongo import MongoClient
     import urllib.parse
+    import os
     
-    db_user = urllib.parse.quote(config.database.username)
-    db_pwd = urllib.parse.quote(config.database.password)
+    # Debug: Print environment and config info
+    print(f"DEBUG: STUDY_CONFIG_FILE env var: {os.getenv('STUDY_CONFIG_FILE')}")
+    print(f"DEBUG: Current working directory: {os.getcwd()}")
+    print(f"DEBUG: Database config - host: {config.database.host}, port: {config.database.port}, user: {config.database.username}, db: {config.database.database}")
+    
+    db_user = urllib.parse.quote(str(config.database.username))
+    db_pwd = urllib.parse.quote(str(config.database.password))
     db_uri = f"mongodb://{db_user}:{db_pwd}@{config.database.host}:{config.database.port}/{config.database.database}"
+    
+    print(f"DEBUG: MongoDB URI: {db_uri}")
     
     return MongoClient(db_uri)
 
@@ -52,7 +60,8 @@ def login_check(uid, password, device):
     """Check user login credentials."""
     try:
         db = get_db()
-        user = db['users'].find_one({'uid': uid})
+        config = get_config()
+        user = db[config.collections.USERS].find_one({'uid': uid})
         if user is None:
             return -1
         if user['study_pass'] == password:
@@ -62,7 +71,7 @@ def login_check(uid, password, device):
                 login_timestamps = user[device_login_time]
 
             login_timestamps.append(current_milli_time())
-            db['users'].update_one({'uid': uid}, {'$set': {device_login_time: login_timestamps}})
+            db[config.collections.USERS].update_one({'uid': uid}, {'$set': {device_login_time: login_timestamps}})
             if 'ra' in user:
                 return 2
             else:
@@ -98,7 +107,7 @@ def login_code_check(code, device):
             access_codes = user['access_codes']
         access_codes.append(code)
 
-        db['users'].update_one({'uid': uid}, {'$set': {device_login_time: login_timestamps, 'access_codes': access_codes}})
+        db[config.collections.USERS].update_one({'uid': uid}, {'$set': {device_login_time: login_timestamps, 'access_codes': access_codes}})
         return 1, uid
     except Exception as e:
         logging.error(f"Login code check failed for code {code}: {e}")
@@ -108,7 +117,8 @@ def save_info(uid, key, value):
     """Save user information to database."""
     try:
         db = get_db()
-        db['users'].update_one({'uid': uid}, {'$set': {key: value}})
+        config = get_config()
+        db[config.collections.USERS].update_one({'uid': uid}, {'$set': {key: value}})
     except Exception as e:
         logging.error(f"Failed to save info for user {uid}: {e}")
 
@@ -116,8 +126,9 @@ def save_user_ping(uid, device, device_type):
     """Save user ping information."""
     try:
         db = get_db()
+        config = get_config()
         timestamp = current_milli_time()
-        db['users'].update_one({'uid': uid}, {'$set': {str(device)+'_last_ping': timestamp}})
+        db[config.collections.USERS].update_one({'uid': uid}, {'$set': {str(device)+'_last_ping': timestamp}})
 
         info = {'uid': uid, 'device': device, 'device_type': device_type, 'timestamp': timestamp}
         try:
@@ -326,7 +337,7 @@ def generate_token(study_id, length):
     pwd = []
     length = length - 2
     chars = string.ascii_uppercase + string.digits
-    random.seed = (os.urandom(1024))
+    random.seed(os.urandom(1024))
     for i in range(length):
         pwd.append(random.choice(chars))
 
@@ -346,7 +357,7 @@ def generate_password(length):
     length = length-6
 
     chars = string.ascii_letters + string.digits + '@#$%'
-    random.seed = (os.urandom(1024))
+    random.seed(os.urandom(1024))
     for i in range(length):
         pwd.append(random.choice(chars))
 
@@ -361,9 +372,10 @@ def create_user(uid, email=None, study_id="A1"):
     """Create a new participant with generated credentials."""
     try:
         db = get_db()
+        config = get_config()
         
         # Check if user already exists
-        existing_user = db['users'].find_one({'uid': uid})
+        existing_user = db[config.collections.USERS].find_one({'uid': uid})
         if existing_user:
             return {'success': False, 'error': f'User {uid} already exists'}
         
@@ -388,8 +400,11 @@ def create_user(uid, email=None, study_id="A1"):
         if email:
             user_obj['email'] = email
         
-        # Insert user
-        db['users'].insert_one(user_obj)
+        # Insert user with duplicate key error handling
+        try:
+            db[config.collections.USERS].insert_one(user_obj)
+        except DuplicateKeyError:
+            return {'success': False, 'error': f'User {uid} already exists (duplicate key error)'}
         
         # Generate and insert user code mapping
         user_code_obj = {
@@ -398,11 +413,11 @@ def create_user(uid, email=None, study_id="A1"):
         }
         
         try:
-            db['user_code_mappings'].insert_one(user_code_obj)
+            db[config.collections.USER_CODE_MAPPINGS].insert_one(user_code_obj)
         except DuplicateKeyError:
             # If code mapping fails, try again with a new token
             user_code_obj['uid_code'] = generate_token(study_id, 6)
-            db['user_code_mappings'].insert_one(user_code_obj)
+            db[config.collections.USER_CODE_MAPPINGS].insert_one(user_code_obj)
         
         logging.info(f"Created participant: {uid}")
         
@@ -456,7 +471,8 @@ def get_all_users():
     """Get all participants from the database."""
     try:
         db = get_db()
-        users = list(db['users'].find({}, {'_id': 0, 'study_pass': 0, 'garmin_pass': 0, 'file_encryption_key': 0}))
+        config = get_config()
+        users = list(db[config.collections.USERS].find({}, {'_id': 0, 'study_pass': 0, 'garmin_pass': 0, 'file_encryption_key': 0}))
         return {'success': True, 'users': users}
     except Exception as e:
         logging.error(f"Error getting participants: {e}")
@@ -467,7 +483,8 @@ def export_users_csv():
     """Export participants to CSV format."""
     try:
         db = get_db()
-        users = list(db['users'].find({}, {'_id': 0}))
+        config = get_config()
+        users = list(db[config.collections.USERS].find({}, {'_id': 0}))
         
         if not users:
             return {'success': False, 'error': 'No participants found'}

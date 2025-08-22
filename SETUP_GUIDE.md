@@ -68,7 +68,7 @@ rm -rf /tmp/study-framework
 - `--base-dir /opt/studies` - Alternative location
 - `--base-dir /home/myuser/studies` - User-specific location
 
-**Note**: The framework is cloned temporarily and cleaned up after setup. The study data and Anaconda installation remain in the specified base directory.
+**Note**: The framework is cloned temporarily and cleaned up after setup. The study data and Anaconda installation remain in the specified base directory. The framework package is installed from the `study_framework_core/` subdirectory.
 
 ### Step 2: Configure
 Edit the generated config file:

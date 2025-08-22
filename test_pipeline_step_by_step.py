@@ -22,6 +22,14 @@ from typing import Dict, List, Optional
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# Set up environment for config loading
+config_file = project_root / "config" / "study_config.json"
+if config_file.exists():
+    os.environ['STUDY_CONFIG_FILE'] = str(config_file)
+    print(f"Set STUDY_CONFIG_FILE to: {config_file}")
+else:
+    print(f"Warning: Config file not found at {config_file}")
+
 from study_framework_core.core.config import get_config
 from study_framework_core.core.handlers import get_db, create_user
 from study_framework_core.core.processing_scripts import DataProcessor
@@ -37,6 +45,11 @@ class StepByStepTester:
         self.test_data_dir = project_root / "test_data"
         self.api_base_url = "http://localhost/api/v1"
         self.user_credentials = None
+        
+        # Debug: Print config paths
+        print(f"DEBUG: Config data_upload_path: {self.config.paths.data_upload_path}")
+        print(f"DEBUG: Config base_dir: {self.config.paths.base_dir}")
+        print(f"DEBUG: Expected upload path: {Path(self.config.paths.data_upload_path) / 'phone' / self.test_user}")
         
     def log(self, message: str, level: str = "INFO"):
         """Log messages with timestamp."""
@@ -204,27 +217,14 @@ class StepByStepTester:
         self.log("Processing Garmin data...")
         
         processor = DataProcessor()
-        garmin_files = list(self.test_data_dir.rglob("*.fit"))
+        success = processor.process_garmin_data(self.test_user)
         
-        if not garmin_files:
-            self.log("⚠️ No Garmin FIT files found")
-            return True
+        if success:
+            self.log("✅ Garmin data processing completed")
+        else:
+            self.log("❌ Garmin data processing failed", "ERROR")
         
-        success_count = 0
-        for garmin_file in garmin_files:
-            self.log(f"Processing: {garmin_file.name}")
-            success = processor.process_garmin_fit_file(
-                user=self.test_user,
-                input_file=str(garmin_file)
-            )
-            if success:
-                success_count += 1
-                self.log(f"✅ Processed: {garmin_file.name}")
-            else:
-                self.log(f"❌ Failed: {garmin_file.name}", "ERROR")
-        
-        self.log(f"✅ Processed {success_count}/{len(garmin_files)} Garmin files")
-        return success_count > 0
+        return success
     
     def generate_summaries(self):
         """Generate daily summaries."""
@@ -237,7 +237,8 @@ class StepByStepTester:
             self.log("✅ Daily summaries generated")
             
             # Show summary data
-            summary = self.db['daily_summaries'].find_one({'uid': self.test_user})
+            config = get_config()
+            summary = self.db[config.collections.DAILY_SUMMARY].find_one({'uid': self.test_user})
             if summary:
                 self.log("Summary data:")
                 self.log(f"  Date: {summary.get('date_str', 'N/A')}")
@@ -257,29 +258,29 @@ class StepByStepTester:
         """Check what data is in the database."""
         self.log("Checking database data...")
         
+        config = get_config()
         collections_to_check = [
-            'location_data',
-            'activity_data',
-            'steps_data',
-            'battery_data',
-            'wifi_data',
-            'bluetooth_data',
-            'brightness_data',
-            'garmin_hr_data',
-            'garmin_stress_data',
-            'garmin_steps_data',
-            'garmin_respiration_data',
-            'garmin_ibi_data',
-            'accelerometer_data',
-            'calllog_data',
-            'lock_unlock_data',
-            'ema_data',
-            'ema_status_data',
-            'notification_data',
-            'app_usage_data',
-            'daily_diary_data',
-            'daily_summaries',
-            'unknown_events_data'
+            config.collections.IOS_LOCATION,
+            config.collections.IOS_ACTIVITY,
+            config.collections.IOS_STEPS,
+            config.collections.IOS_BATTERY,
+            config.collections.IOS_WIFI,
+            config.collections.IOS_BLUETOOTH,
+            config.collections.IOS_BRIGHTNESS,
+            config.collections.GARMIN_HR,
+            config.collections.GARMIN_STRESS,
+            config.collections.GARMIN_STEPS,
+            config.collections.GARMIN_RESPIRATION,
+            config.collections.GARMIN_IBI,
+            config.collections.IOS_ACCELEROMETER,
+            config.collections.IOS_CALLLOG,
+            config.collections.IOS_LOCK_UNLOCK,
+            config.collections.EMA_RESPONSE,
+            config.collections.EMA_STATUS_EVENTS,
+            config.collections.NOTIFICATION_EVENTS,
+            config.collections.APP_USAGE_LOGS,
+            config.collections.DAILY_SUMMARY,
+            config.collections.UNKNOWN_EVENTS
         ]
         
         total_records = 0

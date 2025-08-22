@@ -28,7 +28,10 @@ class DataProcessor:
     def __init__(self):
         self.config = get_config()
         self.db = get_db()
+        self.records = {}  # For batch processing
+        self.batch_size = 2000  # Batch size for bulk inserts
         self.setup_logging()
+        self.init_collections()  # Initialize collections with indexes
     
     def setup_logging(self):
         """Setup logging for data processing."""
@@ -41,6 +44,214 @@ class DataProcessor:
             ]
         )
         self.logger = logging.getLogger(__name__)
+    
+    def init_collections(self):
+        """Initialize MongoDB collections with indexes for optimal performance."""
+        try:
+            import pymongo
+            
+            # iOS data collections
+            self.db[self.config.collections.IOS_LOCATION].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING),
+                ('event_id', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_WIFI].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_BLUETOOTH].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_BRIGHTNESS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_LOCK_UNLOCK].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_BATTERY].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_ACTIVITY].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_STEPS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('start_timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_ACCELEROMETER].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.IOS_CALLLOG].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.UNKNOWN_EVENTS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            # Garmin data collections
+            self.db[self.config.collections.GARMIN_HR].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.GARMIN_STRESS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.GARMIN_STEPS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.GARMIN_RESPIRATION].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.GARMIN_IBI].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.GARMIN_ENERGY].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            # EmpaTica data collections
+            self.db[self.config.collections.EMPATICA_EDA].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.EMPATICA_TEMPERATURE].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.EMPATICA_IBI].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.EMPATICA_BATTERY].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.EMPATICA_BVP].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            # App and EMA collections
+            self.db[self.config.collections.EMA_RESPONSE].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.EMA_STATUS_EVENTS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.APP_USAGE_LOGS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.NOTIFICATION_EVENTS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.APP_SCREEN_EVENTS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            # Summary collections
+            self.db[self.config.collections.DAILY_SUMMARY].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('date', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            # User collections
+            self.db[self.config.collections.USERS].create_index([
+                ('uid', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.db[self.config.collections.USER_CODE_MAPPINGS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('uid_code', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
+            self.logger.info("Successfully initialized MongoDB collections with indexes")
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing collections: {e}")
+    
+    def add_record(self, collection: str, record: dict):
+        """Add a record to the batch processing queue."""
+        if collection not in self.records:
+            self.records[collection] = []
+        self.records[collection].append(record)
+        
+        # Flush batch if it reaches the batch size
+        if len(self.records[collection]) >= self.batch_size:
+            self.flush_records(collection)
+    
+    def flush_records(self, collection: str = None):
+        """Flush records to MongoDB using bulk insert."""
+        try:
+            if collection:
+                collections_to_flush = [collection]
+            else:
+                collections_to_flush = list(self.records.keys())
+            
+            for coll in collections_to_flush:
+                if coll in self.records and self.records[coll]:
+                    self.db[coll].insert_many(self.records[coll], ordered=False)
+                    self.logger.info(f"Bulk inserted {len(self.records[coll])} records to {coll}")
+                    self.records[coll].clear()
+                    
+        except Exception as e:
+            self.logger.error(f"Error flushing records to {collection}: {e}")
+    
+    def archive_file(self, user: str, file_path: str):
+        """Move processed file from upload to processed directory."""
+        try:
+            archive_dir = Path(self.config.paths.data_processed_path) / "phone" / user
+            archive_dir.mkdir(parents=True, exist_ok=True)
+            
+            file_name = Path(file_path).name
+            archive_path = archive_dir / file_name
+            
+            shutil.move(file_path, archive_path)
+            self.logger.info(f"Archived file: {file_path} -> {archive_path}")
+            
+        except Exception as e:
+            self.logger.error(f"Error archiving file {file_path}: {e}")
     
     def process_garmin_fit_file(self, user: str, input_file: str, 
                                output_path: Optional[str] = None,
@@ -253,20 +464,84 @@ class DataProcessor:
             self.logger.info(f"Processing phone data for user: {user}")
             
             # Load phone data from uploads
-            upload_path = Path(self.config.paths.data_upload_path) / user
+            self.logger.info(f"Config data_upload_path: {self.config.paths.data_upload_path}")
+            
+            upload_path = Path(self.config.paths.data_upload_path) / "phone" / user
+            self.logger.info(f"Trying path: {upload_path}")
             if not upload_path.exists():
-                self.logger.warning(f"No upload directory found for user: {user}")
-                return False
+                self.logger.warning(f"Path does not exist: {upload_path}")
+                # Try without phone subdirectory for backward compatibility
+                upload_path = Path(self.config.paths.data_upload_path) / user
+                self.logger.info(f"Trying fallback path: {upload_path}")
+                if not upload_path.exists():
+                    self.logger.warning(f"Fallback path also does not exist: {upload_path}")
+                    self.logger.warning(f"No upload directory found for user: {user}")
+                    self.logger.warning(f"Tried paths: {Path(self.config.paths.data_upload_path) / 'phone' / user} and {Path(self.config.paths.data_upload_path) / user}")
+                    return False
+            else:
+                self.logger.info(f"Found upload directory: {upload_path}")
             
             # Process different types of phone data
             self._process_location_data(user, upload_path)
             self._process_sensor_data(user, upload_path)
+            
+            # Flush any remaining records
+            self.flush_records()
             
             self.logger.info(f"Successfully processed phone data for user: {user}")
             return True
             
         except Exception as e:
             self.logger.error(f"Exception processing phone data for {user}: {e}")
+            return False
+    
+    def process_garmin_data(self, user: str) -> bool:
+        """
+        Process Garmin data for a specific user.
+        
+        Args:
+            user: User ID
+            
+        Returns:
+            bool: True if processing was successful, False otherwise
+        """
+        try:
+            self.logger.info(f"Processing Garmin data for user: {user}")
+            
+            # Look for FIT files in the same directory structure as phone data
+            upload_path = Path(self.config.paths.data_upload_path) / "phone" / user
+            if not upload_path.exists():
+                # Try without phone subdirectory for backward compatibility
+                upload_path = Path(self.config.paths.data_upload_path) / user
+                if not upload_path.exists():
+                    self.logger.warning(f"No upload directory found for user: {user}")
+                    return False
+            
+            # Find all FIT files for this user
+            fit_files = list(upload_path.glob("*.fit"))
+            
+            if not fit_files:
+                self.logger.info(f"No FIT files found for user: {user}")
+                return True  # Not an error if no files exist
+            
+            processed_count = 0
+            for fit_file in fit_files:
+                try:
+                    self.logger.info(f"Processing Garmin FIT file: {fit_file}")
+                    success = self.process_garmin_fit_file(user, str(fit_file))
+                    if success:
+                        processed_count += 1
+                        # Archive the processed file
+                        self.archive_file(user, str(fit_file))
+                except Exception as e:
+                    self.logger.error(f"Error processing FIT file {fit_file}: {e}")
+                    continue
+            
+            self.logger.info(f"Successfully processed {processed_count} Garmin files for user: {user}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Exception processing Garmin data for {user}: {e}")
             return False
     
     def _process_location_data(self, user: str, upload_path: Path):
@@ -322,6 +597,10 @@ class DataProcessor:
                         continue
             
             conn.close()
+            
+            # Archive the processed file
+            self.archive_file(user, str(db_file))
+            
             self.logger.info(f"Successfully processed iOS database: {db_file}")
             
         except Exception as e:
@@ -373,15 +652,16 @@ class DataProcessor:
     def _process_location_record(self, user: str, row):
         """Process location record from iOS database."""
         try:
-            # Assuming row structure: [id, timestamp, event_id, event_data]
-            if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
-                event_data = json.loads(row[3].decode("utf-8")) if isinstance(row[3], bytes) else row[3]
+            # Row structure: [uuid1, uuid2, timestamp, event_id, event_data]
+            if len(row) >= 5:
+                timestamp = self._handle_timestamp_format(row[2])
+                event_id = row[3]
+                event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
+                    'event_id': event_id,
                     'latitude': float(event_data.get('latitude', 0)),
                     'longitude': float(event_data.get('longitude', 0)),
                     'accuracy': float(event_data.get('accuracy', 0)),
@@ -389,7 +669,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['location_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_LOCATION, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing location record: {e}")
@@ -398,8 +678,8 @@ class DataProcessor:
         """Process activity record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
-                event_data = row[3].decode("utf-8") if isinstance(row[3], bytes) else str(row[3])
+                timestamp = self._handle_timestamp_format(row[2])
+                event_data = row[4].decode("utf-8") if isinstance(row[4], bytes) else str(row[4])
                 
                 # Parse activity data (format: "activity1 activity2,confidence")
                 split_event = event_data.split(',')
@@ -409,13 +689,13 @@ class DataProcessor:
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
+                    'event_id': row[3],
                     'activity': activities,
                     'confidence': confidence,
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['activity_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_ACTIVITY, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing activity record: {e}")
@@ -424,8 +704,8 @@ class DataProcessor:
         """Process steps record from iOS database."""
         try:
             if len(row) >= 4:
-                start_timestamp = self._handle_timestamp_format(row[1])
-                event_data = row[3].decode("utf-8") if isinstance(row[3], bytes) else str(row[3])
+                start_timestamp = self._handle_timestamp_format(row[2])
+                event_data = row[4].decode("utf-8") if isinstance(row[4], bytes) else str(row[4])
                 
                 # Parse steps data (format: "end_timestamp,steps,distance,floors_ascended,floors_descended")
                 split_event = event_data.split(',')
@@ -433,7 +713,7 @@ class DataProcessor:
                 record = {
                     'uid': user,
                     'start_timestamp': start_timestamp,
-                    'event_id': row[2],
+                    'event_id': row[3],
                     'end_timestamp': self._handle_timestamp_format(split_event[0]) if len(split_event) > 0 else start_timestamp,
                     'steps': int(split_event[1]) if len(split_event) > 1 else 0,
                     'distance': float(split_event[2]) if len(split_event) > 2 else 0,
@@ -442,7 +722,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['steps_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_STEPS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing steps record: {e}")
@@ -450,20 +730,26 @@ class DataProcessor:
     def _process_battery_record(self, user: str, row):
         """Process battery record from iOS database."""
         try:
-            if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
-                event_data = json.loads(row[3].decode("utf-8")) if isinstance(row[3], bytes) else row[3]
+            # Row structure: [uuid1, uuid2, timestamp, event_id, event_data]
+            if len(row) >= 5:
+                timestamp = self._handle_timestamp_format(row[2])
+                event_id = row[3]
+                event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
-                    'battery_left': int(event_data.get('battery_left', 0)),
-                    'battery_state': int(event_data.get('battery_state', 0)),
+                    'event_id': event_id,
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['battery_data'].insert_one(record)
+                # Add battery fields if they exist
+                if 'battery_left' in event_data:
+                    record['battery_left'] = int(event_data.get('battery_left', 0))
+                if 'battery_state' in event_data:
+                    record['battery_state'] = int(event_data.get('battery_state', 0))
+                
+                self.add_record(self.config.collections.IOS_BATTERY, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing battery record: {e}")
@@ -471,22 +757,28 @@ class DataProcessor:
     def _process_wifi_record(self, user: str, row):
         """Process WiFi record from iOS database."""
         try:
-            if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
-                event_data = json.loads(row[3].decode("utf-8")) if isinstance(row[3], bytes) else row[3]
+            if len(row) >= 5:
+                timestamp = self._handle_timestamp_format(row[2])
+                event_id = row[3]
+                event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
-                    'bssid': event_data.get('bssid', ''),
-                    'ssid': event_data.get('ssid', ''),
-                    'wifi_enabled': int(event_data.get('wifi_enabled', 0)),
-                    'wifi_connected': int(event_data.get('wifi_connected', 0)),
+                    'event_id': event_id,
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['wifi_data'].insert_one(record)
+                # Handle different WiFi event types
+                if event_id == 18:
+                    record['bssid'] = event_data.get('bssid', '')
+                    record['ssid'] = event_data.get('ssid', '')
+                elif event_id == 181:
+                    record['wifi_enabled'] = int(event_data.get('wifi_enabled', 0))
+                    if 'wifi_connected' in event_data:
+                        record['wifi_connected'] = int(event_data.get('wifi_connected', 0))
+                
+                self.add_record(self.config.collections.IOS_WIFI, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing WiFi record: {e}")
@@ -495,20 +787,20 @@ class DataProcessor:
         """Process Bluetooth record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
-                event_data = json.loads(row[3].decode("utf-8")) if isinstance(row[3], bytes) else row[3]
+                timestamp = self._handle_timestamp_format(row[2])
+                event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
+                    'event_id': row[3],
                     'bt_address': event_data.get('bt_address', ''),
                     'bt_rssi': int(event_data.get('bt_rssi', 0)),
                     'bt_name': event_data.get('bt_name', ''),
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['bluetooth_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_BLUETOOTH, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing Bluetooth record: {e}")
@@ -516,19 +808,21 @@ class DataProcessor:
     def _process_brightness_record(self, user: str, row):
         """Process brightness record from iOS database."""
         try:
-            if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
-                event_data = json.loads(row[3].decode("utf-8")) if isinstance(row[3], bytes) else row[3]
+            # Row structure: [uuid1, uuid2, timestamp, event_id, event_data]
+            if len(row) >= 5:
+                timestamp = self._handle_timestamp_format(row[2])
+                event_id = row[3]
+                event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
+                    'event_id': event_id,
                     'brightness': float(event_data.get('brightness', 0)),
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['brightness_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_BRIGHTNESS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing brightness record: {e}")
@@ -536,19 +830,21 @@ class DataProcessor:
     def _process_lock_unlock_record(self, user: str, row):
         """Process lock/unlock record from iOS database."""
         try:
-            if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+            # Row structure: [uuid1, uuid2, timestamp, event_id, event_data]
+            if len(row) >= 5:
+                timestamp = self._handle_timestamp_format(row[2])
+                event_id = row[3]
                 event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
                     'uid': user,
                     'timestamp': timestamp,
-                    'event_id': row[2],
+                    'event_id': event_id,
                     'lock_state': int(event_data.get('LockState', 0)),
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['lock_unlock_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_LOCK_UNLOCK, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing lock/unlock record: {e}")
@@ -561,7 +857,7 @@ class DataProcessor:
                 
                 record = {
                     'uid': user,
-                    'timestamp': self._handle_timestamp_format(event_data.get('timestamp', row[1])),
+                    'timestamp': self._handle_timestamp_format(event_data.get('timestamp', row[2])),
                     'event_id': row[2],
                     'x': float(event_data.get('x', 0)),
                     'y': float(event_data.get('y', 0)),
@@ -569,7 +865,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['accelerometer_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_ACCELEROMETER, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing accelerometer record: {e}")
@@ -578,7 +874,7 @@ class DataProcessor:
         """Process call log record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+                timestamp = self._handle_timestamp_format(row[2])
                 event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
@@ -592,7 +888,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['calllog_data'].insert_one(record)
+                self.add_record(self.config.collections.IOS_CALLLOG, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing call log record: {e}")
@@ -605,7 +901,7 @@ class DataProcessor:
                 
                 record = {
                     'uid': user,
-                    'timestamp': self._handle_timestamp_format(event_data.get('timestamp', row[1])),
+                    'timestamp': self._handle_timestamp_format(event_data.get('timestamp', row[2])),
                     'event_id': row[2],
                     'heart_rate': float(event_data.get('heart_rate', 0)),
                     'status': str(event_data.get('status', '')),
@@ -613,7 +909,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['garmin_hr_data'].insert_one(record)
+                self.add_record(self.config.collections.GARMIN_HR, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing Garmin HR record: {e}")
@@ -626,7 +922,7 @@ class DataProcessor:
                 
                 record = {
                     'uid': user,
-                    'timestamp': self._handle_timestamp_format(event_data.get('timestamp', row[1])),
+                    'timestamp': self._handle_timestamp_format(event_data.get('timestamp', row[2])),
                     'event_id': row[2],
                     'stress': float(event_data.get('stress', 0)),
                     'status': str(event_data.get('status', '')),
@@ -634,7 +930,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['garmin_stress_data'].insert_one(record)
+                self.add_record(self.config.collections.GARMIN_STRESS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing Garmin stress record: {e}")
@@ -643,7 +939,7 @@ class DataProcessor:
         """Process app usage record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+                timestamp = self._handle_timestamp_format(row[2])
                 event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
@@ -655,7 +951,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['app_usage_data'].insert_one(record)
+                self.add_record(self.config.collections.APP_USAGE_LOGS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing app usage record: {e}")
@@ -664,7 +960,7 @@ class DataProcessor:
         """Process EMA response record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+                timestamp = self._handle_timestamp_format(row[2])
                 event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
@@ -676,7 +972,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['ema_data'].insert_one(record)
+                self.add_record(self.config.collections.EMA_RESPONSE, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing EMA response record: {e}")
@@ -685,7 +981,7 @@ class DataProcessor:
         """Process EMA status record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+                timestamp = self._handle_timestamp_format(row[2])
                 event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
@@ -697,7 +993,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['ema_status_data'].insert_one(record)
+                self.add_record(self.config.collections.EMA_STATUS_EVENTS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing EMA status record: {e}")
@@ -706,7 +1002,7 @@ class DataProcessor:
         """Process notification record from iOS database."""
         try:
             if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+                timestamp = self._handle_timestamp_format(row[2])
                 event_data = json.loads(row[4].decode("utf-8")) if isinstance(row[4], bytes) else row[4]
                 
                 record = {
@@ -720,7 +1016,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['notification_data'].insert_one(record)
+                self.add_record(self.config.collections.NOTIFICATION_EVENTS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing notification record: {e}")
@@ -728,8 +1024,9 @@ class DataProcessor:
     def _process_unknown_event_record(self, user: str, row, event_id):
         """Process unknown event record from iOS database."""
         try:
-            if len(row) >= 4:
-                timestamp = self._handle_timestamp_format(row[1])
+            # Row structure: [uuid1, uuid2, timestamp, event_id, event_data]
+            if len(row) >= 5:
+                timestamp = self._handle_timestamp_format(row[2])
                 
                 record = {
                     'uid': user,
@@ -739,7 +1036,7 @@ class DataProcessor:
                     'processed_at': datetime.now().timestamp()
                 }
                 
-                self.db['unknown_events_data'].insert_one(record)
+                self.add_record(self.config.collections.UNKNOWN_EVENTS, record)
                 
         except Exception as e:
             self.logger.error(f"Error processing unknown event record: {e}")
@@ -780,7 +1077,7 @@ class DataProcessor:
                 'event_id': 441,
                 'processed_at': datetime.now().timestamp()
             }
-            return 'garmin_ibi_data', record
+            return self.config.collections.GARMIN_IBI, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin IBI: {e}")
             return None
@@ -796,7 +1093,7 @@ class DataProcessor:
                 'status': str(row.status),
                 'processed_at': datetime.now().timestamp()
             }
-            return 'garmin_hr_data', record
+            return self.config.collections.GARMIN_HR, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin heart rate: {e}")
             return None
@@ -813,7 +1110,7 @@ class DataProcessor:
                 'timestamp': row.timestamp,
                 'processed_at': datetime.now().timestamp()
             }
-            return 'garmin_respiration_data', record
+            return self.config.collections.GARMIN_RESPIRATION, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin respiration: {e}")
             return None
@@ -831,7 +1128,7 @@ class DataProcessor:
                 'total_steps': float(row.totalSteps),
                 'processed_at': datetime.now().timestamp()
             }
-            return 'garmin_steps_data', record
+            return self.config.collections.GARMIN_STEPS, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin steps: {e}")
             return None
@@ -850,7 +1147,7 @@ class DataProcessor:
                 'body_battery_status': str(row.bodyBatteryStatus),
                 'processed_at': datetime.now().timestamp()
             }
-            return 'garmin_stress_data', record
+            return self.config.collections.GARMIN_STRESS, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin stress: {e}")
             return None
@@ -927,7 +1224,7 @@ class DataProcessor:
             }
             
             # Save to database (upsert to avoid duplicates)
-            self.db['daily_summaries'].update_one(
+            self.db[self.config.collections.DAILY_SUMMARY].update_one(
                 {'uid': uid, 'date': start_timestamp},
                 {'$set': summary},
                 upsert=True
@@ -1179,7 +1476,10 @@ def process_all_data():
     
     for user_doc in users:
         uid = user_doc['uid']
+        # Process phone data
         processor.process_phone_data(uid)
+        # Process Garmin data
+        processor.process_garmin_data(uid)
     
     # Generate daily summaries
     processor.generate_daily_summaries()
@@ -1195,14 +1495,27 @@ def process_garmin_files():
     """Process all Garmin FIT files."""
     processor = DataProcessor()
     
-    # Find all FIT files in upload directory
-    upload_path = Path(processor.config.paths.data_upload_path)
-    fit_files = list(upload_path.rglob("*.fit"))
+    # Get all users
+    users = processor.db['users'].find({}, {'uid': 1})
     
-    for fit_file in fit_files:
-        # Extract user from path
-        user = fit_file.parent.name
-        processor.process_garmin_fit_file(user, str(fit_file))
+    for user_doc in users:
+        uid = user_doc['uid']
+        
+        # Look for FIT files in the same directory structure as phone data
+        upload_path = Path(processor.config.paths.data_upload_path) / "phone" / uid
+        if not upload_path.exists():
+            # Try without phone subdirectory for backward compatibility
+            upload_path = Path(processor.config.paths.data_upload_path) / uid
+        
+        if upload_path.exists():
+            # Find all FIT files for this user
+            fit_files = list(upload_path.glob("*.fit"))
+            
+            for fit_file in fit_files:
+                processor.logger.info(f"Processing Garmin FIT file for user {uid}: {fit_file}")
+                processor.process_garmin_fit_file(uid, str(fit_file))
+        else:
+            processor.logger.warning(f"No upload directory found for user: {uid}")
 
 
 if __name__ == "__main__":

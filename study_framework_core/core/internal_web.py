@@ -21,6 +21,20 @@ from study_framework_core.core.config import get_config
 from study_framework_core.core.handlers import get_db, verify_admin_login, get_available_modules
 from study_framework_core.core.dashboard import DashboardBase
 
+# Create a concrete dashboard implementation for internal web
+class SimpleDashboard(DashboardBase):
+    def _get_custom_columns(self):
+        return []
+    
+    def generate_custom_row_data(self, user_data, date_str):
+        return dict()
+
+
+class HealthCheck(Resource):
+    """Health check endpoint for internal web."""
+    def get(self):
+        return {'status': 'healthy', 'service': 'study-framework-internal'}, 200
+
 
 class InternalWebBase:
     """Base class for internal web functionality."""
@@ -39,6 +53,9 @@ class InternalWebBase:
     
     def setup_routes(self):
         """Setup internal web routes."""
+        # Health check route
+        self.api.add_resource(HealthCheck, '/health')
+        
         # Authentication routes
         self.api.add_resource(LoginPage, '/login')
         self.api.add_resource(LoginHandler, '/login-handler')
@@ -164,7 +181,7 @@ class ViewDashboard(Resource):
         users.append({'uid': 'varunm'})  # Add test user
         
         # Generate dashboard context
-        dashboard = DashboardBase()
+        dashboard = SimpleDashboard()
         context = dashboard.get_template_context(None, date_str, users)  # No token needed
         
         return Response(
@@ -192,7 +209,7 @@ class ViewDashboardDate(Resource):
             users.append({'uid': 'varunm'})  # Add test user
             
             # Generate dashboard context
-            dashboard = DashboardBase()
+            dashboard = SimpleDashboard()
             context = dashboard.get_template_context(None, date_str, users)  # No token needed
             
             return Response(
@@ -254,8 +271,9 @@ class ViewUserEma(Resource):
             
             # Get EMA data from database
             db = get_db()
+            config = get_config()
             date_timestamp = int(datetime.strptime(date, "%m-%d-%y").timestamp())
-            daily_summary = db['daily_summaries'].find_one({'uid': user, "date": date_timestamp})
+            daily_summary = db[config.collections.DAILY_SUMMARY].find_one({'uid': user, "date": date_timestamp})
             
             completed_emas = []
             if daily_summary and 'completed_emas' in daily_summary:
@@ -298,8 +316,9 @@ class ViewUserAppUsage(Resource):
             
             # Get app usage data from database
             db = get_db()
+            config = get_config()
             date_timestamp = int(datetime.strptime(date, "%m-%d-%y").timestamp())
-            daily_summary = db['daily_summaries'].find_one({'uid': user, "date": date_timestamp})
+            daily_summary = db[config.collections.DAILY_SUMMARY].find_one({'uid': user, "date": date_timestamp})
             
             app_info = {}
             if daily_summary and 'app_events_info' in daily_summary:
@@ -408,7 +427,8 @@ class DownloadCompliance(Resource):
         end_time_stamp = int(datetime.strptime(end_date, "%Y-%m-%d").timestamp())
         
         # Fetch records from MongoDB
-        records = db['daily_summaries'].find({'date': {'$gte': start_time_stamp, '$lte': end_time_stamp}})
+        config = get_config()
+        records = db[config.collections.DAILY_SUMMARY].find({'date': {'$gte': start_time_stamp, '$lte': end_time_stamp}})
         
         if type == 'aggregation':
             # Aggregate metrics per user
@@ -478,7 +498,7 @@ class DownloadCompliance(Resource):
         
         elif type == 'daily':
             # Daily records
-            records = db['daily_summaries'].find({'date': {'$gte': start_time_stamp, '$lte': end_time_stamp}}).sort("uid", 1)
+            records = db[config.collections.DAILY_SUMMARY].find({'date': {'$gte': start_time_stamp, '$lte': end_time_stamp}}).sort("uid", 1)
             output = io.StringIO()
             writer = csv.writer(output)
             writer.writerow([

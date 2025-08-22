@@ -106,6 +106,7 @@ class CoreAPIEndpoints:
     def setup_core_routes(self):
         """Setup core API routes that are common to all studies."""
         self.api.add_resource(Default, '/')
+        self.api.add_resource(HealthCheck, '/health')
         self.api.add_resource(Login, '/credentials/check')
         self.api.add_resource(LoginCode, '/credentials/checkCode')
         self.api.add_resource(UserInfo, '/user/info/update')
@@ -130,6 +131,12 @@ class Default(Resource):
     """Default API endpoint."""
     def get(self):
         return {'message': 'Study Framework API', 'version': '1.0.0'}, 200
+
+
+class HealthCheck(Resource):
+    """Health check endpoint for API."""
+    def get(self):
+        return {'status': 'healthy', 'service': 'study-framework-api'}, 200
 
 
 class Login(Resource):

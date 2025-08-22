@@ -12,6 +12,54 @@ from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
 
 
+# Collection names - centralized for consistency
+class CollectionNames:
+    """Centralized collection names for MongoDB collections."""
+    # iOS data collections
+    IOS_LOCATION = 'ios_location'
+    IOS_BRIGHTNESS = 'ios_brightness'
+    IOS_BLUETOOTH = 'ios_bluetooth'
+    IOS_WIFI = 'ios_wifi'
+    IOS_BATTERY = 'ios_battery'
+    IOS_LOCK_UNLOCK = 'ios_lock_unlock'
+    IOS_STEPS = 'ios_steps'
+    IOS_ACTIVITY = 'ios_activity'
+    IOS_ACCELEROMETER = 'ios_accelerometer'
+    IOS_CALLLOG = 'ios_calllog'
+    
+    # Garmin data collections
+    GARMIN_HR = 'garmin_hr'
+    GARMIN_STRESS = 'garmin_stress'
+    GARMIN_IBI = 'garmin_ibi'
+    GARMIN_RESPIRATION = 'garmin_respiration'
+    GARMIN_STEPS = 'garmin_steps'
+    GARMIN_ENERGY = 'garmin_energy'
+    
+    # EmpaTica data collections
+    EMPATICA_EDA = 'empatica_eda'
+    EMPATICA_TEMPERATURE = 'empatica_temperature'
+    EMPATICA_IBI = 'empatica_ibi'
+    EMPATICA_BATTERY = 'empatica_battery'
+    EMPATICA_BVP = 'empatica_bvp'
+    
+    # App and EMA collections
+    EMA_RESPONSE = "ema_response"
+    EMA_STATUS_EVENTS = "ema_status_events"
+    APP_USAGE_LOGS = "app_usage_logs"
+    NOTIFICATION_EVENTS = "notification_events"
+    APP_SCREEN_EVENTS = "app_screen_events"
+    
+    # Summary collections
+    DAILY_SUMMARY = 'daily_summaries'
+    
+    # Unknown events collection
+    UNKNOWN_EVENTS = 'unknown_events_data'
+    
+    # User collections
+    USERS = 'users'
+    USER_CODE_MAPPINGS = 'user_code_mappings'
+
+
 @dataclass
 class DatabaseConfig:
     """Database configuration settings."""
@@ -112,6 +160,7 @@ class StudyFrameworkConfig:
         self.database = DatabaseConfig(**config_data.get('database', {}))
         self.server = ServerConfig(**config_data.get('server', {}))
         self.logging = LoggingConfig(**config_data.get('logging', {}))
+        self.collections = CollectionNames()  # Centralized collection names
         self.security = SecurityConfig(**config_data.get('security', {}))
         self.paths = PathsConfig(**config_data.get('paths', {}))
         
@@ -233,7 +282,7 @@ class StudyFrameworkConfig:
 
 
 # Global configuration instance
-config = StudyFrameworkConfig()
+config = StudyFrameworkConfig(os.getenv('STUDY_CONFIG_FILE'))
 
 
 def get_config() -> StudyFrameworkConfig:
