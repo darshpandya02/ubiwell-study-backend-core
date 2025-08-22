@@ -521,15 +521,22 @@ class DataProcessor:
             
             # Look for FIT files in the same directory structure as phone data
             upload_path = Path(self.config.paths.data_upload_path) / "phone" / user
+            self.logger.info(f"Checking for Garmin files in: {upload_path}")
+            
             if not upload_path.exists():
+                self.logger.info(f"Primary path does not exist: {upload_path}")
                 # Try without phone subdirectory for backward compatibility
                 upload_path = Path(self.config.paths.data_upload_path) / user
+                self.logger.info(f"Checking fallback path: {upload_path}")
                 if not upload_path.exists():
                     self.logger.warning(f"No upload directory found for user: {user}")
                     return False
+            else:
+                self.logger.info(f"Found upload directory: {upload_path}")
             
             # Find all FIT files for this user
             fit_files = list(upload_path.glob("*.fit"))
+            self.logger.info(f"Found {len(fit_files)} FIT files in {upload_path}")
             
             if not fit_files:
                 self.logger.info(f"No FIT files found for user: {user}")
