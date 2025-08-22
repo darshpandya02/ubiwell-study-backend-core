@@ -197,21 +197,26 @@ class StudyFrameworkConfig:
         if os.getenv('ANNOUNCEMENT_PASS_KEY'):
             self.security.announcement_pass_key = os.getenv('ANNOUNCEMENT_PASS_KEY')
         
-        # Paths
-        if os.getenv('BASE_DIR'):
-            self.paths.base_dir = os.getenv('BASE_DIR')
-        if os.getenv('LOGS_DIR'):
-            self.paths.logs_dir = os.getenv('LOGS_DIR')
-        if os.getenv('DATA_UPLOAD_PATH'):
-            self.paths.data_upload_path = os.getenv('DATA_UPLOAD_PATH')
-        if os.getenv('DATA_PROCESSED_PATH'):
-            self.paths.data_processed_path = os.getenv('DATA_PROCESSED_PATH')
-        if os.getenv('EMA_FILE_PATH'):
-            self.paths.ema_file_path = os.getenv('EMA_FILE_PATH')
-        if os.getenv('DATA_UPLOAD_LOGS_PATH'):
-            self.paths.data_upload_logs_path = os.getenv('DATA_UPLOAD_LOGS_PATH')
-        if os.getenv('ACTIVE_SENSING_UPLOAD_PATH'):
-            self.paths.active_sensing_upload_path = os.getenv('ACTIVE_SENSING_UPLOAD_PATH')
+        # Paths - Load from config file first, then environment variables as fallback
+        if self.config_file and os.path.exists(self.config_file):
+            # Config file should override defaults
+            pass  # Already loaded above
+        else:
+            # Fallback to environment variables
+            if os.getenv('BASE_DIR'):
+                self.paths.base_dir = os.getenv('BASE_DIR')
+            if os.getenv('LOGS_DIR'):
+                self.paths.logs_dir = os.getenv('LOGS_DIR')
+            if os.getenv('DATA_UPLOAD_PATH'):
+                self.paths.data_upload_path = os.getenv('DATA_UPLOAD_PATH')
+            if os.getenv('DATA_PROCESSED_PATH'):
+                self.paths.data_processed_path = os.getenv('DATA_PROCESSED_PATH')
+            if os.getenv('EMA_FILE_PATH'):
+                self.paths.ema_file_path = os.getenv('EMA_FILE_PATH')
+            if os.getenv('DATA_UPLOAD_LOGS_PATH'):
+                self.paths.data_upload_logs_path = os.getenv('DATA_UPLOAD_LOGS_PATH')
+            if os.getenv('ACTIVE_SENSING_UPLOAD_PATH'):
+                self.paths.active_sensing_upload_path = os.getenv('ACTIVE_SENSING_UPLOAD_PATH')
     
     def save_config(self, config_file: Optional[str] = None):
         """Save current configuration to file."""

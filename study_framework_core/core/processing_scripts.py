@@ -35,11 +35,21 @@ class DataProcessor:
     
     def setup_logging(self):
         """Setup logging for data processing."""
+        # Debug: Print config paths
+        print(f"DEBUG: Config paths:")
+        print(f"  base_dir: {self.config.paths.base_dir}")
+        print(f"  logs_dir: {self.config.paths.logs_dir}")
+        print(f"  data_dir: {self.config.paths.data_dir}")
+        
+        # Ensure logs directory exists
+        logs_dir = Path(self.config.paths.logs_dir)
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(f"{self.config.paths.logs_dir}/data_processing.log"),
+                logging.FileHandler(logs_dir / "data_processing.log"),
                 logging.StreamHandler()
             ]
         )
