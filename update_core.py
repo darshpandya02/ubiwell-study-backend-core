@@ -129,9 +129,9 @@ def update_core_framework(study_path, study_name=None):
     print("📥 Pulling latest changes from Git...")
     run_command("git pull origin main")
     
-    # Update the core package in the study's environment
+    # Update the core package in the study's environment (copy files, not editable)
     print("📦 Updating core package...")
-    update_command = f"{conda_path} run -n {env_name} pip install --upgrade -e {Path.cwd()}/study_framework_core/"
+    update_command = f"{conda_path} run -n {env_name} pip install --upgrade {Path.cwd()}/study_framework_core/"
     run_command(update_command)
     
     print("✅ Core framework updated successfully!")

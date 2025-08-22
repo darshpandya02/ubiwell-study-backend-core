@@ -163,9 +163,9 @@ def install_packages(env_name, study_path, base_dir="/mnt/study"):
         print(f"  Installing {package}...")
         run_command(f"{conda_path} run -n {env_name} pip install {package}")
     
-    # Install the study framework core in editable mode for easy updates
-    print("  Installing study-framework-core in editable mode...")
-    run_command(f"{conda_path} run -n {env_name} pip install -e study_framework_core/")
+    # Install the study framework core by copying files (not editable mode for production stability)
+    print("  Installing study-framework-core...")
+    run_command(f"{conda_path} run -n {env_name} pip install study_framework_core/")
     
     # Install gunicorn
     print("  Installing gunicorn...")
