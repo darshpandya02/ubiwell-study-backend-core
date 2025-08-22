@@ -1511,6 +1511,32 @@ def generate_all_summaries():
 
 def process_garmin_files():
     """Process all Garmin FIT files."""
+    # Set the STUDY_CONFIG_FILE environment variable if not already set
+    if 'STUDY_CONFIG_FILE' not in os.environ:
+        # Try to find the config file in common locations
+        import os
+        from pathlib import Path
+        
+        # Look for config file in current directory or parent directories
+        current_dir = Path.cwd()
+        config_file = None
+        
+        # Check current directory
+        if (current_dir / "config" / "study_config.json").exists():
+            config_file = current_dir / "config" / "study_config.json"
+        # Check parent directories
+        else:
+            for parent in current_dir.parents:
+                if (parent / "config" / "study_config.json").exists():
+                    config_file = parent / "config" / "study_config.json"
+                    break
+        
+        if config_file:
+            os.environ['STUDY_CONFIG_FILE'] = str(config_file)
+            print(f"Set STUDY_CONFIG_FILE to: {config_file}")
+        else:
+            print("Warning: Could not find study_config.json. Using default configuration.")
+    
     processor = DataProcessor()
     
     # Get all users
