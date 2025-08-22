@@ -198,10 +198,43 @@ class StepByStepTester:
         self.log(f"✅ Uploaded {success_count}/{len(data_files)} files successfully")
         return success_count > 0
     
+    def _setup_environment(self):
+        """Set up the environment for processing."""
+        # Set the STUDY_CONFIG_FILE environment variable if not already set
+        if 'STUDY_CONFIG_FILE' not in os.environ:
+            # Try to find the config file in common locations
+            import os
+            from pathlib import Path
+            
+            # Look for config file in current directory or parent directories
+            current_dir = Path.cwd()
+            config_file = None
+            
+            # Check current directory
+            if (current_dir / "config" / "study_config.json").exists():
+                config_file = current_dir / "config" / "study_config.json"
+            # Check parent directories
+            else:
+                for parent in current_dir.parents:
+                    if (parent / "config" / "study_config.json").exists():
+                        config_file = parent / "config" / "study_config.json"
+                        break
+            
+            if config_file:
+                os.environ['STUDY_CONFIG_FILE'] = str(config_file)
+                self.log(f"Set STUDY_CONFIG_FILE to: {config_file}")
+                
+                # Reload the configuration with the new file
+                from study_framework_core.core.config import set_config_file
+                set_config_file(str(config_file))
+            else:
+                self.log("Warning: Could not find study_config.json. Using default configuration.")
+    
     def process_phone_data(self):
         """Process phone data."""
         self.log("Processing phone data...")
         
+        self._setup_environment()
         processor = DataProcessor()
         success = processor.process_phone_data(self.test_user)
         
@@ -216,6 +249,7 @@ class StepByStepTester:
         """Process Garmin data."""
         self.log("Processing Garmin data...")
         
+        self._setup_environment()
         processor = DataProcessor()
         success = processor.process_garmin_data(self.test_user)
         
@@ -230,6 +264,7 @@ class StepByStepTester:
         """Generate daily summaries."""
         self.log("Generating daily summaries...")
         
+        self._setup_environment()
         processor = DataProcessor()
         success = processor.generate_daily_summaries(hours_back=24)
         
