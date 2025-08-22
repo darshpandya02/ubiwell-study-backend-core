@@ -131,6 +131,30 @@ def copy_core_framework(study_dir: Path, user: str):
         raise
 
 
+def copy_test_files(study_dir: Path, user: str):
+    """Copy test files to the study directory."""
+    try:
+        # Copy test files from the core framework repository
+        test_files = [
+            "test_pipeline_step_by_step.py",
+            "upload_test_data.py"
+        ]
+        
+        for test_file in test_files:
+            source_file = Path.cwd() / test_file
+            dest_file = study_dir / test_file
+            
+            if source_file.exists():
+                shutil.copy2(source_file, dest_file)
+                run_command(f"chown {user}:{user} {dest_file}")
+                print(f"✅ Copied test file: {test_file}")
+            else:
+                print(f"⚠️  Warning: Test file not found: {test_file}")
+                
+    except Exception as e:
+        print(f"⚠️  Warning: Could not copy test files: {e}")
+
+
 
 
 
@@ -175,6 +199,10 @@ def update_core_framework(study_path, study_name=None):
     # Copy updated core framework files to study directory
     print("📁 Copying updated core framework files...")
     copy_core_framework(study_path, study_path.name)
+    
+    # Copy test files to study directory
+    print("🧪 Copying test files...")
+    copy_test_files(study_path, study_path.name)
     
 
     

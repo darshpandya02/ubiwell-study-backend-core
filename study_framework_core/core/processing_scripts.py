@@ -1237,6 +1237,43 @@ class DataProcessor:
             self.logger.error(f"Exception generating daily summaries: {e}")
             return False
     
+    def generate_summaries_for_period(self, days_back: int = 7) -> bool:
+        """
+        Generate daily summaries for the last N days and today up to now.
+        
+        Args:
+            days_back: Number of days to go back (default: 7)
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            self.logger.info(f"Generating summaries for last {days_back} days and today...")
+            
+            success = True
+            for i in range(days_back):
+                days_ago = i
+                if days_ago == 0:
+                    # Today - generate up to now
+                    self.logger.info(f"Generating summary for today (up to now)...")
+                    success &= self.generate_daily_summaries(hours_back=24)
+                else:
+                    # Previous days - generate full day
+                    target_date = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+                    self.logger.info(f"Generating summary for {target_date}...")
+                    success &= self.generate_daily_summaries(date=target_date)
+            
+            if success:
+                self.logger.info(f"Successfully generated summaries for last {days_back} days")
+            else:
+                self.logger.error("Failed to generate some summaries")
+            
+            return success
+            
+        except Exception as e:
+            self.logger.error(f"Exception generating summaries for period: {e}")
+            return False
+    
     def _generate_user_daily_summary(self, uid: str, start_timestamp: int, 
                                    end_timestamp: int, target_date: datetime.date):
         """Generate daily summary for a specific user."""

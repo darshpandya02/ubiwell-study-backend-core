@@ -202,9 +202,6 @@ class StepByStepTester:
         """Set up the environment for processing."""
         # Set the STUDY_CONFIG_FILE environment variable if not already set
         if 'STUDY_CONFIG_FILE' not in os.environ:
-            # Try to find the config file in common locations
-            import os
-            from pathlib import Path
             
             # Look for config file in current directory or parent directories
             current_dir = Path.cwd()
@@ -260,28 +257,34 @@ class StepByStepTester:
         
         return success
     
-    def generate_summaries(self):
-        """Generate daily summaries."""
-        self.log("Generating daily summaries...")
+    def generate_summaries(self, days_back=7):
+        """Generate daily summaries for the last N days and today up to now."""
+        self.log(f"Generating daily summaries for last {days_back} days and today...")
         
         self._setup_environment()
         processor = DataProcessor()
-        success = processor.generate_daily_summaries(hours_back=24)
+        
+        # Use the new core method for generating summaries for a period
+        success = processor.generate_summaries_for_period(days_back=days_back)
         
         if success:
             self.log("✅ Daily summaries generated")
             
-            # Show summary data
+            # Show summary data for the last few days
             config = get_config()
-            summary = self.db[config.collections.DAILY_SUMMARY].find_one({'uid': self.test_user})
-            if summary:
-                self.log("Summary data:")
-                self.log(f"  Date: {summary.get('date_str', 'N/A')}")
-                self.log(f"  Location duration: {summary.get('location', {}).get('duration_hours', 0):.2f} hours")
-                self.log(f"  Garmin wear duration: {summary.get('garmin_wear_duration', 0):.2f} hours")
-                self.log(f"  Garmin on duration: {summary.get('garmin_on_duration', 0):.2f} hours")
-                self.log(f"  Distance traveled: {summary.get('location', {}).get('distance_traveled', 0):.2f} meters")
-                self.log(f"  EMA responses: {summary.get('ema', {}).get('response_count', 0)}")
+            summaries = list(self.db[config.collections.DAILY_SUMMARY].find(
+                {'uid': self.test_user}
+            ).sort('date_str', -1).limit(3))
+            
+            if summaries:
+                self.log("Recent summary data:")
+                for summary in summaries:
+                    self.log(f"  Date: {summary.get('date_str', 'N/A')}")
+                    self.log(f"    Location duration: {summary.get('location', {}).get('duration_hours', 0):.2f} hours")
+                    self.log(f"    Garmin wear duration: {summary.get('garmin_wear_duration', 0):.2f} hours")
+                    self.log(f"    Garmin on duration: {summary.get('garmin_on_duration', 0):.2f} hours")
+                    self.log(f"    Distance traveled: {summary.get('location', {}).get('distance_traveled', 0):.2f} meters")
+                    self.log(f"    EMA responses: {summary.get('ema', {}).get('response_count', 0)}")
             else:
                 self.log("⚠️ No summary data found")
         else:
@@ -427,7 +430,13 @@ def main():
         elif choice == "6":
             tester.process_garmin_data()
         elif choice == "7":
-            tester.generate_summaries()
+            days_input = input("Enter number of days to generate summaries for (default: 7): ").strip()
+            try:
+                days_back = int(days_input) if days_input else 7
+                tester.generate_summaries(days_back=days_back)
+            except ValueError:
+                print("Invalid input. Using default of 7 days.")
+                tester.generate_summaries(days_back=7)
         elif choice == "8":
             tester.check_database_data()
         elif choice == "9":
