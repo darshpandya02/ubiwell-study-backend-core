@@ -69,7 +69,8 @@ class DataProcessor:
             
             self.db[self.config.collections.IOS_WIFI].create_index([
                 ('uid', pymongo.ASCENDING),
-                ('timestamp', pymongo.ASCENDING)
+                ('timestamp', pymongo.ASCENDING),
+                ('event_id', pymongo.ASCENDING)
             ], unique=True, dropDups=True)
             
             self.db[self.config.collections.IOS_BLUETOOTH].create_index([
@@ -1510,22 +1511,8 @@ def process_garmin_files():
     
     for user_doc in users:
         uid = user_doc['uid']
-        
-        # Look for FIT files in the same directory structure as phone data
-        upload_path = Path(processor.config.paths.data_upload_path) / "phone" / uid
-        if not upload_path.exists():
-            # Try without phone subdirectory for backward compatibility
-            upload_path = Path(processor.config.paths.data_upload_path) / uid
-        
-        if upload_path.exists():
-            # Find all FIT files for this user
-            fit_files = list(upload_path.glob("*.fit"))
-            
-            for fit_file in fit_files:
-                processor.logger.info(f"Processing Garmin FIT file for user {uid}: {fit_file}")
-                processor.process_garmin_fit_file(uid, str(fit_file))
-        else:
-            processor.logger.warning(f"No upload directory found for user: {uid}")
+        # Use the proper method that handles archiving and user-specific processing
+        processor.process_garmin_data(uid)
 
 
 if __name__ == "__main__":
