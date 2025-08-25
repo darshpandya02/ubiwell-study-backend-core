@@ -8,29 +8,38 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --light-bg: #f8f9fa;
-            --border-radius: 10px;
-            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --light-bg: #f8fafc;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --border-radius: 12px;
+            --box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: var(--light-bg);
+            color: var(--gray-800);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
         }
         
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        }
-        
-        .navbar-brand {
-            font-weight: 600;
-            font-size: 1.5rem;
+        .navbar {
+            background: var(--white) !important;
+            border-bottom: 1px solid var(--gray-200);
+            box-shadow: var(--box-shadow);
         }
         
         .main-container {
@@ -38,16 +47,18 @@
         }
         
         .content-section {
-            background: white;
+            background: var(--white);
             border-radius: var(--border-radius);
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: var(--box-shadow);
+            border: 1px solid var(--gray-200);
         }
         
         .section-title {
-            color: #2c3e50;
+            color: var(--gray-900);
             font-weight: 600;
+            font-size: 1.25rem;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
@@ -59,45 +70,63 @@
         }
         
         .table thead th {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
+            background: var(--gray-50);
+            color: var(--gray-700);
             border: none;
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
         }
         
         .table tbody tr {
-            transition: background-color 0.3s ease;
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid var(--gray-100);
         }
         
         .table tbody tr:hover {
-            background-color: var(--light-bg);
+            background: var(--gray-50);
+        }
+        
+        .table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .table tbody td {
+            border: none;
+            vertical-align: middle;
+            padding: 1rem;
+            color: var(--gray-700);
+            font-weight: 500;
         }
         
         .btn-action {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background: var(--primary-color);
             border: none;
             color: white;
             padding: 0.5rem 1rem;
-            border-radius: 20px;
+            border-radius: 6px;
             text-decoration: none;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
         
         .btn-action:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            background: var(--secondary-color);
             color: white;
             text-decoration: none;
+            transform: translateY(-1px);
         }
         
         .form-control {
-            border-radius: var(--border-radius);
-            border: 2px solid #e9ecef;
-            transition: border-color 0.3s ease;
+            border-radius: 8px;
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem;
+            color: var(--gray-700);
+            transition: border-color 0.2s ease;
         }
         
         .form-control:focus {
