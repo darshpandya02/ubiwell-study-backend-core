@@ -418,7 +418,7 @@ def create_directory_structure(study_name, base_dir, user):
     return study_dir
 
 
-def create_systemd_service(study_name, env_name, study_dir, user, base_dir):
+def create_systemd_service(study_name, env_name, study_dir, user, base_dir, conda_path=None):
     """Create separate systemd services for API and internal web."""
     api_service_name = f"{study_name.lower().replace(' ', '-')}-api"
     internal_service_name = f"{study_name.lower().replace(' ', '-')}-internal"
@@ -430,7 +430,7 @@ def create_systemd_service(study_name, env_name, study_dir, user, base_dir):
     run_command(f"chmod 755 {socket_dir}")
     
     # Get conda environment path
-    conda_prefix = run_command(f"conda run -n {env_name} python -c 'import sys; print(sys.prefix)'", capture_output=True)
+    conda_prefix = run_command(f"{conda_path} run -n {env_name} python -c 'import sys; print(sys.prefix)'", capture_output=True)
     
     # API Service (Priority #1 - Data Collection)
     api_service_content = f"""[Unit]
@@ -949,8 +949,11 @@ def update_core_framework(study_name):
     
     print(f"🔄 Updating core framework in {env_name}")
     
+    # Check Anaconda installation
+    conda_path = check_anaconda()
+    
     # Update the core package
-    run_command(f"conda run -n {env_name} pip install --upgrade -e .")
+    run_command(f"{conda_path} run -n {env_name} pip install --upgrade -e .")
     
     print("✅ Core framework updated successfully!")
     print("💡 You may need to restart the services:")
@@ -1013,7 +1016,7 @@ def main():
     install_packages(env_name, Path.cwd(), conda_path)
     
     # Create systemd services
-    api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.study_path)
+    api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.study_path, conda_path)
     
     # Create nginx configuration
     nginx_file = create_nginx_config(args.study_name, api_service_name, internal_service_name)
