@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "study-framework-core"
+version = "1.0.0"
+description = "Core framework for Ubiwell study deployments"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Ubiwell Team", email = "team@ubiwell.com"}
+]
+keywords = ["study", "framework", "flask", "api", "dashboard"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "flask>=2.0.0",
+    "flask-restful>=0.3.9",
+    "pymongo>=4.0.0",
+    "pandas>=1.3.0",
+    "numpy>=1.21.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+    "python-dotenv>=0.19.0",
+    "requests>=2.25.0",
+    "plotly>=5.17.0",
+    "gunicorn>=20.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "black>=21.0.0",
+    "flake8>=3.9.0",
+]
+
+[project.scripts]
+setup-study = "study_framework_core.setup_study:main"
+update-core = "study_framework_core.update_core:main"
+
+[project.urls]
+Homepage = "https://github.com/your-org/ubiwell-study-backend-core"
+Repository = "https://github.com/your-org/ubiwell-study-backend-core"
+Issues = "https://github.com/your-org/ubiwell-study-backend-core/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["study_framework_core*"]
+
+[tool.setuptools.package-data]
+"study_framework_core" = ["templates/*", "static/*"]
