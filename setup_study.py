@@ -726,18 +726,29 @@ def create_admin_user(study_dir: Path, db_username: str, db_password: str, db_ho
             temp_script_content = f'''#!/usr/bin/env python3
 import os
 import sys
-sys.path.insert(0, "{study_dir}")
+from pathlib import Path
+
+# Add the submodule to Python path
+study_path = Path("{study_dir}")
+submodule_path = study_path / "ubiwell-study-backend-core"
+sys.path.insert(0, str(submodule_path))
 
 os.environ['STUDY_CONFIG_FILE'] = "{study_dir}/config/study_config.json"
 
-from study_framework_core.core.handlers import create_admin_user
-
-result = create_admin_user()
-print(f"SUCCESS:{{result['success']}}")
-print(f"USERNAME:{{result['username']}}")
-print(f"PASSWORD:{{result['password']}}")
-if not result['success']:
-    print(f"ERROR:{{result['error']}}")
+try:
+    from study_framework_core.core.handlers import create_admin_user
+    
+    result = create_admin_user()
+    print(f"SUCCESS:{{result['success']}}")
+    print(f"USERNAME:{{result['username']}}")
+    print(f"PASSWORD:{{result['password']}}")
+    if not result['success']:
+        print(f"ERROR:{{result['error']}}")
+except Exception as e:
+    print(f"SUCCESS:False")
+    print(f"USERNAME:admin")
+    print(f"PASSWORD:None")
+    print(f"ERROR:{{str(e)}}")
 '''
             temp_script.write_text(temp_script_content)
             
@@ -1089,7 +1100,8 @@ def main():
         args.announcement_key or 'study123'
     )
     
-    # Create admin user for internal web access
+    # Create admin user for internal web access (optional)
+    print("🔐 Creating admin user for internal web access...")
     admin_password = create_admin_user(
         study_dir,
         args.db_username or 'study_user',
@@ -1100,6 +1112,12 @@ def main():
         env_name,
         conda_path
     )
+    
+    if admin_password:
+        print("✅ Admin user created successfully")
+    else:
+        print("⚠️  Admin user creation failed - you can create it manually later")
+        print("   Run: cd /mnt/study/bean-study && python create_admin_user.py")
     requirements_file = create_requirements_file(study_dir)
     
     # Create README with extension instructions

@@ -1,48 +1,54 @@
 #!/usr/bin/env python3
 """
-Standalone script to create admin user for the study.
-Run this from the study directory.
+Standalone script to create admin user for internal web access.
 """
 
 import os
 import sys
 from pathlib import Path
 
-def create_admin_user():
-    """Create admin user for the study."""
-    study_dir = Path.cwd()
+def main():
+    # Get the study directory (parent of this script)
+    script_dir = Path(__file__).parent
+    study_dir = script_dir.parent
     
-    # Set up environment
+    print(f"🔐 Creating admin user for study: {study_dir.name}")
+    
+    # Add the submodule to Python path
+    submodule_path = study_dir / "ubiwell-study-backend-core"
+    if not submodule_path.exists():
+        print(f"❌ Submodule not found: {submodule_path}")
+        sys.exit(1)
+    
+    sys.path.insert(0, str(submodule_path))
+    
+    # Set environment variable for config
     config_file = study_dir / "config" / "study_config.json"
     if not config_file.exists():
         print(f"❌ Config file not found: {config_file}")
-        print("Please run this script from the study directory (e.g., /mnt/study/bean-study)")
         sys.exit(1)
     
     os.environ['STUDY_CONFIG_FILE'] = str(config_file)
-    sys.path.insert(0, str(study_dir))
     
     try:
-        from study_framework_core.core.handlers import create_admin_user as create_admin_user_handler
+        from study_framework_core.core.handlers import create_admin_user
         
-        print("🔐 Creating admin user...")
-        result = create_admin_user_handler()
+        result = create_admin_user()
         
         if result['success']:
             print(f"✅ Admin user created successfully!")
             print(f"   Username: {result['username']}")
             print(f"   Password: {result['password']}")
             print(f"   ⚠️  Please save this password securely!")
-            return result['password']
         else:
             print(f"❌ Failed to create admin user: {result['error']}")
-            return None
+            sys.exit(1)
             
     except Exception as e:
         print(f"❌ Error creating admin user: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+        print(f"💡 Make sure you're running this from the study directory")
+        print(f"💡 Make sure the conda environment is activated")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    create_admin_user()
+    main()
