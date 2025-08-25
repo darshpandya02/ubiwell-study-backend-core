@@ -82,8 +82,9 @@ from flask import Flask
 # Load configuration
 config = get_config()
 
-# Create Flask app
-app = Flask(__name__)
+# Create Flask app with template directory
+template_dir = submodule_path / "study_framework_core" / "templates"
+app = Flask(__name__, template_folder=str(template_dir))
 
 # Create dashboard instance
 dashboard = SimpleDashboard()
