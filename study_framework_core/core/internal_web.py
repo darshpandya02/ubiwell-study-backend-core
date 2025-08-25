@@ -111,8 +111,6 @@ class InternalWebBase:
         self.api.add_resource(ViewDashboard, '/dashboard')
         self.api.add_resource(ViewDashboardDate, '/dashboard/<date>')
         self.api.add_resource(ViewUserDetail, '/dashboard/view/<user>/<date>')
-        self.api.add_resource(ViewUserEma, '/dashboard/ema/<user>/<date>')
-        self.api.add_resource(ViewUserAppUsage, '/dashboard/app-usage/<user>/<date>')
         self.api.add_resource(ViewAnnouncement, '/dashboard/announcement')
         
         # Data download routes
@@ -378,98 +376,7 @@ class ViewUserDetail(Resource):
             return {"message": f"Error generating plots: {str(e)}", "status": 500}, 500
 
 
-class ViewUserEma(Resource):
-    """View user EMA information."""
-    def get(self, user, date):
-        if 'admin_logged_in' not in session:
-            return redirect('/internal_web/login')
-        
-        config = get_config()
-        
-        try:
-            current_date = datetime.strptime(date, "%m-%d-%y")
-            previous_date = (current_date - timedelta(days=1)).strftime("%m-%d-%y")
-            next_date = (current_date + timedelta(days=1)).strftime("%m-%d-%y")
-            
-            # Get EMA data from database
-            db = get_db()
-            config = get_config()
-            date_timestamp = int(datetime.strptime(date, "%m-%d-%y").timestamp())
-            daily_summary = db[config.collections.DAILY_SUMMARY].find_one({'uid': user, "date": date_timestamp})
-            
-            completed_emas = []
-            if daily_summary and 'completed_emas' in daily_summary:
-                completed_emas = daily_summary['completed_emas']
-            
-            # Look for EMA plot
-            plot_path = os.path.join(config.paths.static_dir, user, 'ema', f"{date}.html")
-            
-            if os.path.exists(plot_path):
-                with open(plot_path, 'r') as file:
-                    plot_content = file.read()
-                return Response(
-                    render_template('user_ema.html', 
-                                  user=user, date=date,
-                                  plot_content=Markup(plot_content), 
-                                  previous_date=previous_date,
-                                  next_date=next_date,
-                                  ema=completed_emas), 
-                    mimetype='text/html'
-                )
-            else:
-                return {"message": "Plot not found", "status": 404}, 404
-                
-        except ValueError as e:
-            return {"message": "Invalid date format", "status": 400}, 400
 
-
-class ViewUserAppUsage(Resource):
-    """View user app usage information."""
-    def get(self, user, date):
-        if 'admin_logged_in' not in session:
-            return redirect('/internal_web/login')
-        
-        config = get_config()
-        
-        try:
-            current_date = datetime.strptime(date, '%m-%d-%y')
-            prev_date = (current_date - timedelta(days=1)).strftime('%m-%d-%y')
-            next_date = (current_date + timedelta(days=1)).strftime('%m-%d-%y')
-            
-            # Get app usage data from database
-            db = get_db()
-            config = get_config()
-            date_timestamp = int(datetime.strptime(date, "%m-%d-%y").timestamp())
-            daily_summary = db[config.collections.DAILY_SUMMARY].find_one({'uid': user, "date": date_timestamp})
-            
-            app_info = {}
-            if daily_summary and 'app_events_info' in daily_summary:
-                app_info = daily_summary['app_events_info']
-            
-            # Look for app usage plot
-            plot_path = os.path.join(config.paths.static_dir, user, 'app_events', f"{date}.html")
-            
-            if os.path.exists(plot_path):
-                with open(plot_path, 'r') as file:
-                    plot_content = file.read()
-                template = render_template('user_app_usage.html', 
-                                         user=user, date=date,
-                                         plot_content=Markup(plot_content),
-                                         app_info=app_info, 
-                                         previous_date=prev_date, 
-                                         next_date=next_date)
-            else:
-                template = render_template('user_app_usage.html', 
-                                         user=user, date=date,
-                                         plot_content="",
-                                         app_info=app_info, 
-                                         previous_date=prev_date, 
-                                         next_date=next_date)
-            
-            return Response(template, mimetype='text/html')
-            
-        except ValueError as e:
-            return {"message": "Invalid date format", "status": 400}, 400
 
 
 class ViewAnnouncement(Resource):
@@ -559,13 +466,8 @@ class DownloadCompliance(Resource):
                 'total_garmin_on': 0,
                 'total_phone_on': 0,
                 'total_garmin_worn': 0,
-                'total_app_events': 0,
-                'total_completed_emas': 0,
-                'total_scheduled_emas': 0,
-                'sum_depression_scores': 0,
                 'total_days': 0
             })
-            total_dep_count = 0
             
             for record in records:
                 uid = record.get('uid', 'unknown')
@@ -573,14 +475,6 @@ class DownloadCompliance(Resource):
                 user_metrics[uid]['total_garmin_on'] += record.get('garmin_on_duration', 0)
                 user_metrics[uid]['total_phone_on'] += record.get('location_duration', 0)
                 user_metrics[uid]['total_garmin_worn'] += record.get('garmin_wear_duration', 0)
-                user_metrics[uid]['total_completed_emas'] += len(record.get('completed_emas', []))
-                user_metrics[uid]['total_scheduled_emas'] += len(record.get('scheduled_emas', []))
-                
-                values = record.get('depression_scores', {}).values()
-                if values:
-                    user_metrics[uid]['sum_depression_scores'] += sum([int(v) for v in values])
-                    total_dep_count += len(values)
-                
                 user_metrics[uid]['total_days'] += 1
             
             # Prepare CSV
@@ -588,24 +482,16 @@ class DownloadCompliance(Resource):
             writer = csv.writer(output)
             writer.writerow([
                 'User ID', 'Total Distance', 'Total Garmin On', 'Total Phone On', 'Total Garmin Worn',
-                'Total App Events', 'Total Completed EMAs', 'Total Scheduled EMAs', 'Mean Depression Score',
                 'Total Days'
             ])
             
             for uid, metrics in user_metrics.items():
-                mean_depression_score = (
-                    metrics['sum_depression_scores'] / total_dep_count if total_dep_count else 0
-                )
                 writer.writerow([
                     uid,
                     metrics['total_distance'],
                     metrics['total_garmin_on'],
                     metrics['total_phone_on'],
                     metrics['total_garmin_worn'],
-                    metrics['total_app_events'],
-                    metrics['total_completed_emas'],
-                    metrics['total_scheduled_emas'],
-                    round(mean_depression_score, 2),
                     metrics['total_days']
                 ])
             
@@ -624,8 +510,7 @@ class DownloadCompliance(Resource):
             output = io.StringIO()
             writer = csv.writer(output)
             writer.writerow([
-                'User ID', 'Date', 'Distance', 'Garmin On', 'Phone On', 'Garmin Worn',
-                'App Events', 'Completed EMAs', 'Scheduled EMAs', 'Mean Depression Score'
+                'User ID', 'Date', 'Distance', 'Garmin On', 'Phone On', 'Garmin Worn'
             ])
             
             for record in records:
@@ -634,21 +519,10 @@ class DownloadCompliance(Resource):
                 garmin_on = record.get('garmin_on_duration', 0)
                 phone_on = record.get('location_duration', 0)
                 garmin_worn = record.get('garmin_wear_duration', 0)
-                completed_emas = len(record.get('completed_emas', []))
-                scheduled_emas = len(record.get('scheduled_emas', []))
                 date = datetime.fromtimestamp(record['date']).strftime("%Y-%m-%d")
                 
-                # Calculate mean depression score
-                values = record.get('depression_scores', {}).values()
-                if values:
-                    val = [int(v) for v in values]
-                    depression_scores = sum(val) / len(val)
-                else:
-                    depression_scores = 0
-                
                 writer.writerow([
-                    uid, date, distance, garmin_on, phone_on, garmin_worn,
-                    app_events, completed_emas, scheduled_emas, depression_scores
+                    uid, date, distance, garmin_on, phone_on, garmin_worn
                 ])
             
             output.seek(0)
