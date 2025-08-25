@@ -497,43 +497,48 @@ def create_nginx_config(study_name, api_service_name, internal_service_name, tes
     """Create nginx configuration with separate services."""
     nginx_config = f"""# {study_name} Nginx Configuration (Separate Services)
 
-# API endpoints (Priority #1 - Data Collection)
-location /api/v1/ {{
-    include proxy_params;
-    proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
-}}
+server {{
+    listen 80;
+    server_name _;
 
-# Internal web dashboard (Priority #2 - Dashboard)
-location /internal_web {{
-    # Allow specific IP ranges (customize as needed)
-    allow 129.10.0.0/16;
-    allow 129.10.128.0/17;
-    allow 129.10.64.0/18;
-    allow 155.33.0.0/16;
-    allow 155.33.0.0/17;
-    allow 10.0.0.0/8;
-    deny all;
+    # API endpoints (Priority #1 - Data Collection)
+    location /api/v1/ {{
+        include proxy_params;
+        proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
+    }}
 
-    include proxy_params;
-    proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
-}}
+    # Internal web dashboard (Priority #2 - Dashboard)
+    location /internal_web {{
+        # Allow specific IP ranges (customize as needed)
+        allow 129.10.0.0/16;
+        allow 129.10.128.0/17;
+        allow 129.10.64.0/18;
+        allow 155.33.0.0/16;
+        allow 155.33.0.0/17;
+        allow 10.0.0.0/8;
+        deny all;
 
-# Health check endpoints
-location /api/health {{
-    include proxy_params;
-    proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
-}}
+        include proxy_params;
+        proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
+    }}
 
-location /internal/health {{
-    include proxy_params;
-    proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
-}}
+    # Health check endpoints
+    location /api/health {{
+        include proxy_params;
+        proxy_pass http://unix:/var/sockets/{api_service_name}.sock;
+    }}
 
-# Static files
-location /static/ {{
-    alias /mnt/study/{study_name.lower().replace(' ', '-')}/static/;
-    expires 30d;
-    add_header Cache-Control "public, immutable";
+    location /internal/health {{
+        include proxy_params;
+        proxy_pass http://unix:/var/sockets/{internal_service_name}.sock;
+    }}
+
+    # Static files
+    location /static/ {{
+        alias /mnt/study/{study_name.lower().replace(' ', '-')}/static/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }}
 }}
 """
     
@@ -714,7 +719,7 @@ def create_sample_config_files(study_dir: Path):
     print(f"✅ Created sample config files in {study_dir}")
 
 
-def create_admin_user(study_dir: Path, db_username: str, db_password: str, db_host: str, db_port: str, db_name: str):
+def create_admin_user(study_dir: Path, db_username: str, db_password: str, db_host: str, db_port: str, db_name: str, env_name: str = None, conda_path: str = None):
     """Create admin user for internal web access."""
     try:
         # Set up environment for database connection
@@ -724,10 +729,57 @@ def create_admin_user(study_dir: Path, db_username: str, db_password: str, db_ho
         import sys
         sys.path.insert(0, str(study_dir))
         
-        from study_framework_core.core.handlers import create_admin_user
-        
-        # Create admin user
-        result = create_admin_user()
+        # Use conda environment if available
+        if env_name and conda_path:
+            # Create a temporary script to run in conda environment
+            temp_script = study_dir / "temp_create_admin.py"
+            temp_script_content = f'''#!/usr/bin/env python3
+import os
+import sys
+sys.path.insert(0, "{study_dir}")
+
+os.environ['STUDY_CONFIG_FILE'] = "{study_dir}/config/study_config.json"
+
+from study_framework_core.core.handlers import create_admin_user
+
+result = create_admin_user()
+print(f"SUCCESS:{{result['success']}}")
+print(f"USERNAME:{{result['username']}}")
+print(f"PASSWORD:{{result['password']}}")
+if not result['success']:
+    print(f"ERROR:{{result['error']}}")
+'''
+            temp_script.write_text(temp_script_content)
+            
+            # Run the script in conda environment
+            cmd = f"{conda_path} run -n {env_name} python {temp_script}"
+            result_output = run_command(cmd, capture_output=True)
+            
+            # Parse the output
+            lines = result_output.split('\n')
+            success = False
+            username = "admin"
+            password = None
+            error = None
+            
+            for line in lines:
+                if line.startswith("SUCCESS:"):
+                    success = line.split(":", 1)[1].strip() == "True"
+                elif line.startswith("USERNAME:"):
+                    username = line.split(":", 1)[1].strip()
+                elif line.startswith("PASSWORD:"):
+                    password = line.split(":", 1)[1].strip()
+                elif line.startswith("ERROR:"):
+                    error = line.split(":", 1)[1].strip()
+            
+            # Clean up temp script
+            temp_script.unlink()
+            
+            result = {"success": success, "username": username, "password": password, "error": error}
+        else:
+            # Fallback to direct import (may fail if dependencies not available)
+            from study_framework_core.core.handlers import create_admin_user
+            result = create_admin_user()
         
         if result['success']:
             print(f"✅ Admin user created successfully!")
@@ -1054,7 +1106,9 @@ def main():
         args.db_password or 'study_password',
         args.db_host or 'localhost',
         args.db_port or '27017',
-        args.db_name
+        args.db_name,
+        env_name,
+        conda_path
     )
     requirements_file = create_requirements_file(study_dir)
     
