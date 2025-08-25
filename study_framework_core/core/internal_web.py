@@ -473,7 +473,12 @@ class DownloadCompliance(Resource):
                 uid = record.get('uid', 'unknown')
                 user_metrics[uid]['total_distance'] += record.get('distance', 0)
                 user_metrics[uid]['total_garmin_on'] += record.get('garmin_on_duration', 0)
-                user_metrics[uid]['total_phone_on'] += record.get('location_duration', 0)
+                
+                # Get phone duration from nested location object
+                location_data = record.get('location', {})
+                phone_duration = location_data.get('duration_hours', 0.0)
+                user_metrics[uid]['total_phone_on'] += phone_duration
+                
                 user_metrics[uid]['total_garmin_worn'] += record.get('garmin_wear_duration', 0)
                 user_metrics[uid]['total_days'] += 1
             
@@ -517,7 +522,11 @@ class DownloadCompliance(Resource):
                 uid = record.get('uid', 'unknown')
                 distance = record.get('distance', 0)
                 garmin_on = record.get('garmin_on_duration', 0)
-                phone_on = record.get('location_duration', 0)
+                
+                # Get phone duration from nested location object
+                location_data = record.get('location', {})
+                phone_on = location_data.get('duration_hours', 0.0)
+                
                 garmin_worn = record.get('garmin_wear_duration', 0)
                 date = datetime.fromtimestamp(record['date']).strftime("%Y-%m-%d")
                 

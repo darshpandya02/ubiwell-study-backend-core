@@ -631,7 +631,7 @@ def get_available_modules():
             'name': 'Data Downloads',
             'description': 'Download compliance reports and data exports',
             'icon': 'fas fa-download',
-            'url': '/internal_web/downloads',
+            'url': '/internal_web/download_compliance',
             'color': 'secondary'
         }
     ]
