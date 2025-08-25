@@ -609,7 +609,7 @@ from study_framework_core.core.api import CoreAPIEndpoints
 config = get_config()
 
 # Create API instance
-core_api = CoreAPIEndpoints(config.api, config.auth_key)
+core_api = CoreAPIEndpoints(config.server, config.security.auth_key)
 
 # Get the Flask app
 app = core_api.app
@@ -644,13 +644,20 @@ sys.path.insert(0, str(submodule_path))
 os.environ['STUDY_CONFIG_FILE'] = str(study_path / "config" / "study_config.json")
 
 from study_framework_core.core.config import get_config
-from study_framework_core.core.internal_web import InternalWebApp
+from study_framework_core.core.internal_web import InternalWebBase, SimpleDashboard
+from flask import Flask
 
 # Load configuration
 config = get_config()
 
+# Create Flask app
+app = Flask(__name__)
+
+# Create dashboard instance
+dashboard = SimpleDashboard()
+
 # Create internal web instance
-internal_web = InternalWebApp(config.internal_web, config.auth_key)
+internal_web = InternalWebBase(app, dashboard)
 
 # Get the Flask app
 app = internal_web.app
