@@ -232,14 +232,22 @@ class ViewDashboard(Resource):
         today_date = datetime.now().date() - timedelta(days=1)
         date_str = today_date.strftime("%m-%d-%y")
         
-        # Get users from database
+        # Get users who have daily summaries for this date
         db = get_db()
-        users = list(db['users'].find())
-        users.append({'uid': 'varunm'})  # Add test user
+        config = get_config()
+        
+        # Convert date to timestamp
+        date_timestamp = int(datetime.strptime(date_str, "%m-%d-%y").timestamp())
+        
+        # Find users who have daily summaries for this date
+        daily_summaries = list(db[config.collections.DAILY_SUMMARY].find({'date': date_timestamp}))
+        users_with_data = [{'uid': summary['uid']} for summary in daily_summaries]
+        
+        logging.info(f"Found {len(users_with_data)} users with daily summaries for {date_str}")
         
         # Generate dashboard context
         dashboard = SimpleDashboard()
-        context = dashboard.get_template_context(None, date_str, users)  # No token needed
+        context = dashboard.get_template_context(None, date_str, users_with_data)  # No token needed
         
         return Response(
             render_template('dashboard_base.html', **context),
@@ -264,14 +272,22 @@ class ViewDashboardDate(Resource):
             request_date = datetime.strptime(date, "%m-%d-%y").date()
             date_str = request_date.strftime("%m-%d-%y")
             
-            # Get users from database
+            # Get users who have daily summaries for this date
             db = get_db()
-            users = list(db['users'].find())
-            users.append({'uid': 'varunm'})  # Add test user
+            config = get_config()
+            
+            # Convert date to timestamp
+            date_timestamp = int(datetime.strptime(date_str, "%m-%d-%y").timestamp())
+            
+            # Find users who have daily summaries for this date
+            daily_summaries = list(db[config.collections.DAILY_SUMMARY].find({'date': date_timestamp}))
+            users_with_data = [{'uid': summary['uid']} for summary in daily_summaries]
+            
+            logging.info(f"Found {len(users_with_data)} users with daily summaries for {date_str}")
             
             # Generate dashboard context
             dashboard = SimpleDashboard()
-            context = dashboard.get_template_context(None, date_str, users)  # No token needed
+            context = dashboard.get_template_context(None, date_str, users_with_data)  # No token needed
             
             return Response(
                 render_template('dashboard_base.html', **context),
