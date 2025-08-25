@@ -34,15 +34,20 @@ os.environ['STUDY_CONFIG_FILE'] = str(study_path / "config" / "study_config.json
 
 from study_framework_core.core.config import get_config
 from study_framework_core.core.api import CoreAPIEndpoints
+from flask import Flask
+from flask_restful import Api
 
 # Load configuration
 config = get_config()
 
-# Create API instance
-core_api = CoreAPIEndpoints(config.server, config.security.auth_key)
+# Create Flask app
+app = Flask(__name__)
 
-# Get the Flask app
-app = core_api.app
+# Create Flask-RESTful API
+api = Api(app, prefix='/api/v1')
+
+# Create API instance
+core_api = CoreAPIEndpoints(api, config.security.auth_key)
 
 if __name__ == "__main__":
     app.run()
