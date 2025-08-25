@@ -227,13 +227,14 @@ class StepByStepTester:
             else:
                 self.log("Warning: Could not find study_config.json. Using default configuration.")
     
-    def process_phone_data(self):
-        """Process phone data."""
-        self.log("Processing phone data...")
+    def process_phone_data(self, force_user=None):
+        """Process phone data for the test user or specified user."""
+        user_to_process = force_user if force_user else self.test_user
+        self.log(f"Processing phone data for user: {user_to_process}")
         
         self._setup_environment()
         processor = DataProcessor()
-        success = processor.process_phone_data(self.test_user)
+        success = processor.process_phone_data(user_to_process)
         
         if success:
             self.log("✅ Phone data processing completed")
@@ -242,13 +243,14 @@ class StepByStepTester:
         
         return success
     
-    def process_garmin_data(self):
-        """Process Garmin data."""
-        self.log("Processing Garmin data...")
+    def process_garmin_data(self, force_user=None):
+        """Process Garmin data for the test user or specified user."""
+        user_to_process = force_user if force_user else self.test_user
+        self.log(f"Processing Garmin data for user: {user_to_process}")
         
         self._setup_environment()
         processor = DataProcessor()
-        success = processor.process_garmin_data(self.test_user)
+        success = processor.process_garmin_data(user_to_process)
         
         if success:
             self.log("✅ Garmin data processing completed")
@@ -257,15 +259,18 @@ class StepByStepTester:
         
         return success
     
-    def generate_summaries(self, days_back=7):
+    def generate_summaries(self, days_back=7, force_user=None):
         """Generate daily summaries for the last N days and today up to now."""
-        self.log(f"Generating daily summaries for last {days_back} days and today...")
+        if force_user:
+            self.log(f"Generating daily summaries for last {days_back} days and today (force user: {force_user})...")
+        else:
+            self.log(f"Generating daily summaries for last {days_back} days and today...")
         
         self._setup_environment()
         processor = DataProcessor()
         
         # Use the new core method for generating summaries for a period
-        success = processor.generate_summaries_for_period(days_back=days_back)
+        success = processor.generate_summaries_for_period(days_back=days_back, force_user=force_user)
         
         if success:
             self.log("✅ Daily summaries generated")
@@ -426,17 +431,23 @@ def main():
         elif choice == "4":
             tester.upload_all_files()
         elif choice == "5":
-            tester.process_phone_data()
+            force_user_input = input("Enter user ID to force processing (or press Enter to skip): ").strip()
+            force_user = force_user_input if force_user_input else None
+            tester.process_phone_data(force_user=force_user)
         elif choice == "6":
-            tester.process_garmin_data()
+            force_user_input = input("Enter user ID to force processing (or press Enter to skip): ").strip()
+            force_user = force_user_input if force_user_input else None
+            tester.process_garmin_data(force_user=force_user)
         elif choice == "7":
             days_input = input("Enter number of days to generate summaries for (default: 7): ").strip()
+            force_user_input = input("Enter user ID to force processing (or press Enter to skip): ").strip()
             try:
                 days_back = int(days_input) if days_input else 7
-                tester.generate_summaries(days_back=days_back)
+                force_user = force_user_input if force_user_input else None
+                tester.generate_summaries(days_back=days_back, force_user=force_user)
             except ValueError:
                 print("Invalid input. Using default of 7 days.")
-                tester.generate_summaries(days_back=7)
+                tester.generate_summaries(days_back=7, force_user=force_user_input if force_user_input else None)
         elif choice == "8":
             tester.check_database_data()
         elif choice == "9":

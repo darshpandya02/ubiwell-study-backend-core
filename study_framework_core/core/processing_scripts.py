@@ -1196,13 +1196,14 @@ class DataProcessor:
     
 
     
-    def generate_daily_summaries(self, date: Optional[str] = None, hours_back: int = 2) -> bool:
+    def generate_daily_summaries(self, date: Optional[str] = None, hours_back: int = 2, force_user: Optional[str] = None) -> bool:
         """
         Generate daily summaries for all users or a specific date.
         
         Args:
             date: Date in YYYY-MM-DD format (defaults to last 2 hours for cron jobs)
             hours_back: Number of hours to look back (default: 2 for cron jobs)
+            force_user: Force processing for specific user (bypasses login check)
             
         Returns:
             bool: True if successful, False otherwise
@@ -1223,8 +1224,20 @@ class DataProcessor:
             
             self.logger.info(f"Generating summaries for {target_date} (from {start_timestamp} to {end_timestamp})")
             
-            # Get all users
-            users = self.db['users'].find({}, {'uid': 1})
+            # Get users - only those who have logged in (have device_login_time)
+            if force_user:
+                # Force processing for specific user
+                users = [{'uid': force_user}]
+                self.logger.info(f"Force processing for user: {force_user}")
+            else:
+                # Only process users who have logged in (have device_login_time)
+                users = list(self.db['users'].find({
+                    '$or': [
+                        {'phone_login_time': {'$exists': True}},
+                        {'garmin_login_time': {'$exists': True}}
+                    ]
+                }, {'uid': 1}))
+                self.logger.info(f"Found {len(users)} users with login time")
             
             for user_doc in users:
                 uid = user_doc['uid']
@@ -1237,12 +1250,13 @@ class DataProcessor:
             self.logger.error(f"Exception generating daily summaries: {e}")
             return False
     
-    def generate_summaries_for_period(self, days_back: int = 7) -> bool:
+    def generate_summaries_for_period(self, days_back: int = 7, force_user: Optional[str] = None) -> bool:
         """
         Generate daily summaries for the last N days and today up to now.
         
         Args:
             days_back: Number of days to go back (default: 7)
+            force_user: Force processing for specific user (bypasses login check)
             
         Returns:
             bool: True if successful, False otherwise
@@ -1254,14 +1268,15 @@ class DataProcessor:
             for i in range(days_back):
                 days_ago = i
                 if days_ago == 0:
-                    # Today - generate up to now
-                    self.logger.info(f"Generating summary for today (up to now)...")
-                    success &= self.generate_daily_summaries(hours_back=24)
+                    # Today - generate from midnight to now
+                    self.logger.info(f"Generating summary for today (midnight to now)...")
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    success &= self.generate_daily_summaries(date=today, force_user=force_user)
                 else:
-                    # Previous days - generate full day
+                    # Previous days - generate full day (midnight to 11:59 PM)
                     target_date = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
                     self.logger.info(f"Generating summary for {target_date}...")
-                    success &= self.generate_daily_summaries(date=target_date)
+                    success &= self.generate_daily_summaries(date=target_date, force_user=force_user)
             
             if success:
                 self.logger.info(f"Successfully generated summaries for last {days_back} days")
@@ -1317,9 +1332,10 @@ class DataProcessor:
     def _get_location_info(self, uid: str, start_timestamp: int, end_timestamp: int) -> tuple:
         """Get location information for a user."""
         try:
-            # Get GPS records
-            gps_records = list(self.db['location_data'].find({
-                'uid': uid,
+            # Get GPS records (event_id: 152 for location data)
+            gps_records = list(self.db[self.config.collections.IOS_LOCATION].find({
+                'uid': uid, 
+                'event_id': 152,
                 'timestamp': {'$gte': start_timestamp, '$lt': end_timestamp}
             }).sort('timestamp', 1))
             
@@ -1329,8 +1345,18 @@ class DataProcessor:
             # Calculate distance traveled
             distance_traveled = self._calculate_distance_traveled(gps_records)
             
-            # Calculate duration
-            duration_hours = len(gps_records) * 10 / 3600  # Assuming 10-minute intervals
+            # Calculate duration using the same method as backend_scripts
+            gps_count = 0
+            previous_time = 0
+            gps_minutes = 0
+            
+            for gps in gps_records:
+                if gps['timestamp'] - previous_time < 15 * 60:  # 15 minutes threshold
+                    gps_minutes += float(gps['timestamp'] - previous_time) / 60
+                    gps_count += 1
+                previous_time = gps['timestamp']
+            
+            duration_hours = float(gps_minutes) / 60
             
             return distance_traveled, duration_hours
             
@@ -1368,20 +1394,24 @@ class DataProcessor:
         """Get Garmin device information for a user."""
         try:
             # Get Garmin heart rate records (indicates device is worn)
-            garmin_hr_records = list(self.db['garmin_hr_data'].find({
+            garmin_hr_count = self.db[self.config.collections.GARMIN_HR].count_documents({
                 'uid': uid,
                 'timestamp': {'$gte': start_timestamp, '$lt': end_timestamp}
-            }))
+            })
             
             # Get Garmin stress records (indicates device is on and monitoring)
-            garmin_stress_records = list(self.db['garmin_stress_data'].find({
+            garmin_stress_count = self.db[self.config.collections.GARMIN_STRESS].count_documents({
                 'uid': uid,
                 'timestamp': {'$gte': start_timestamp, '$lt': end_timestamp}
-            }))
+            })
             
-            # Calculate durations (assuming 6-minute intervals for each record)
-            garmin_wear_duration = len(garmin_hr_records) * 6 / 60  # Convert to hours
-            garmin_on_duration = len(garmin_stress_records) * 6 / 60  # Convert to hours
+            # Calculate durations using the same method as backend_scripts:
+            # - Garmin wear duration: based on heart rate records (6-minute intervals)
+            # - Garmin on duration: based on stress records (6-minute intervals)
+            garmin_wear_duration = float(garmin_hr_count) / (6 * 60)  # Convert to hours
+            garmin_on_duration = float(garmin_stress_count) / (6 * 60)  # Convert to hours
+            
+            self.logger.info(f"Garmin info for {uid}: {garmin_stress_count} stress records = {garmin_on_duration:.2f} hours")
             
             return garmin_wear_duration, garmin_on_duration
             
