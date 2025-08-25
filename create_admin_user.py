@@ -14,6 +14,16 @@ def main():
     
     print(f"🔐 Creating admin user for study: {study_dir.name}")
     
+    # Check if we're in a conda environment
+    conda_env = os.environ.get('CONDA_DEFAULT_ENV')
+    if not conda_env:
+        print("❌ Not in a conda environment!")
+        print("💡 Please activate the conda environment first:")
+        print(f"   conda activate bean-study-env")
+        sys.exit(1)
+    
+    print(f"✅ Using conda environment: {conda_env}")
+    
     # Add the submodule to Python path
     submodule_path = study_dir / "ubiwell-study-backend-core"
     if not submodule_path.exists():

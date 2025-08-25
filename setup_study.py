@@ -352,28 +352,40 @@ def install_packages(env_name, study_path, conda_path=None):
     """Install required packages in the conda environment."""
     print(f"📦 Installing packages in {env_name}")
     
-    # Activate environment and install packages
-    conda_packages = [
-        "flask",
-        "flask-restful", 
-        "pymongo",
-        "pandas",
-        "numpy",
-        "matplotlib",
-        "seaborn",
-        "python-dotenv",
-        "requests"
-    ]
+    # Get the requirements.txt path
+    requirements_path = Path(__file__).parent / "requirements.txt"
     
-    for package in conda_packages:
-        print(f"  Installing {package}...")
-        run_command(f"{conda_path} run -n {env_name} pip install {package}")
+    if requirements_path.exists():
+        print(f"  Installing from requirements.txt: {requirements_path}")
+        run_command(f"{conda_path} run -n {env_name} pip install -r {requirements_path}")
+    else:
+        print("⚠️  requirements.txt not found, installing packages individually...")
+        # Fallback to individual packages
+        conda_packages = [
+            "flask",
+            "flask-restful", 
+            "pymongo",
+            "pandas",
+            "numpy",
+            "matplotlib",
+            "seaborn",
+            "python-dotenv",
+            "requests",
+            "marshmallow",
+            "werkzeug",
+            "geopy",
+            "plotly"
+        ]
+        
+        for package in conda_packages:
+            print(f"  Installing {package}...")
+            run_command(f"{conda_path} run -n {env_name} pip install {package}")
     
     # Install the study framework core in editable mode for easy updates
     print("  Installing study-framework-core in editable mode...")
     run_command(f"{conda_path} run -n {env_name} pip install -e .")
     
-    # Install gunicorn
+    # Install gunicorn if not already installed
     print("  Installing gunicorn...")
     run_command(f"{conda_path} run -n {env_name} pip install gunicorn")
     
