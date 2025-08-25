@@ -35,12 +35,7 @@ class CollectionNames:
     GARMIN_STEPS = 'garmin_steps'
     GARMIN_ENERGY = 'garmin_energy'
     
-    # EmpaTica data collections
-    EMPATICA_EDA = 'empatica_eda'
-    EMPATICA_TEMPERATURE = 'empatica_temperature'
-    EMPATICA_IBI = 'empatica_ibi'
-    EMPATICA_BATTERY = 'empatica_battery'
-    EMPATICA_BVP = 'empatica_bvp'
+    # EmpaTica data collections - REMOVED (outdated, no longer used)
     
     # App and EMA collections
     EMA_RESPONSE = "ema_response"

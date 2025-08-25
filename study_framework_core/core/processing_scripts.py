@@ -150,31 +150,7 @@ class DataProcessor:
                 ('timestamp', pymongo.ASCENDING)
             ], unique=True, dropDups=True)
             
-            # EmpaTica data collections
-            self.db[self.config.collections.EMPATICA_EDA].create_index([
-                ('uid', pymongo.ASCENDING),
-                ('timestamp', pymongo.ASCENDING)
-            ], unique=True, dropDups=True)
-            
-            self.db[self.config.collections.EMPATICA_TEMPERATURE].create_index([
-                ('uid', pymongo.ASCENDING),
-                ('timestamp', pymongo.ASCENDING)
-            ], unique=True, dropDups=True)
-            
-            self.db[self.config.collections.EMPATICA_IBI].create_index([
-                ('uid', pymongo.ASCENDING),
-                ('timestamp', pymongo.ASCENDING)
-            ], unique=True, dropDups=True)
-            
-            self.db[self.config.collections.EMPATICA_BATTERY].create_index([
-                ('uid', pymongo.ASCENDING),
-                ('timestamp', pymongo.ASCENDING)
-            ], unique=True, dropDups=True)
-            
-            self.db[self.config.collections.EMPATICA_BVP].create_index([
-                ('uid', pymongo.ASCENDING),
-                ('timestamp', pymongo.ASCENDING)
-            ], unique=True, dropDups=True)
+            # EmpaTica data collections - REMOVED (outdated, no longer used)
             
             # App and EMA collections
             self.db[self.config.collections.EMA_RESPONSE].create_index([

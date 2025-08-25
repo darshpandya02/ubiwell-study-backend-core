@@ -149,7 +149,7 @@ class DataProcessorBase(ABC):
             distance, location_duration = self._get_location_info(db, uid, start_time, end_time)
             
             # Get sensor data
-            empatica_duration, stress_duration = self._get_sensor_info(db, uid, start_time, end_time)
+            garmin_hr_duration, stress_duration = self._get_sensor_info(db, uid, start_time, end_time)
             
             # Get EMA data
             scheduled_emas, completed_emas, depression_scores = self._get_ema_info(db, uid, start_time, end_time)
@@ -164,7 +164,7 @@ class DataProcessorBase(ABC):
                 'date_obj': date,
                 'distance': distance,
                 'location_duration': location_duration,
-                'empatica_duration': empatica_duration,
+                'garmin_hr_duration': garmin_hr_duration,
                 'stress_duration': stress_duration,
                 'scheduled_emas': scheduled_emas,
                 'completed_emas': completed_emas,
@@ -216,7 +216,7 @@ class DataProcessorBase(ABC):
         """Get sensor data information."""
         try:
             # Count sensor records
-            empatica_count = db['garmin_hr'].count_documents({
+            garmin_hr_count = db['garmin_hr'].count_documents({
                 'uid': uid, 
                 'timestamp': {'$gte': start_time, '$lt': end_time}
             })
@@ -226,10 +226,10 @@ class DataProcessorBase(ABC):
             })
             
             # Convert to hours (assuming 6-minute intervals)
-            empatica_duration = float(empatica_count) / (6 * 60)
+            garmin_hr_duration = float(garmin_hr_count) / (6 * 60)
             stress_duration = float(stress_count) / (6 * 60)
             
-            return empatica_duration, stress_duration
+            return garmin_hr_duration, stress_duration
             
         except Exception as e:
             logging.error(f"Error getting sensor info for user {uid}: {e}")
