@@ -579,34 +579,28 @@ API WSGI entry point for {study_name} (Data Collection - Priority #1)
 \"\"\"
 
 import sys
+import os
 from pathlib import Path
 
-# Add the study directory to Python path
+# Add the submodule to Python path
 study_path = Path(__file__).parent
-sys.path.insert(0, str(study_path))
+submodule_path = study_path / "ubiwell-study-backend-core"
+sys.path.insert(0, str(submodule_path))
 
-from study_framework_core.core.config import set_config_file
-from flask import Flask
-from flask_restful import Api
+# Set environment variable for config
+os.environ['STUDY_CONFIG_FILE'] = str(study_path / "config" / "study_config.json")
+
+from study_framework_core.core.config import get_config
 from study_framework_core.core.api import CoreAPIEndpoints
 
 # Load configuration
-config_file = study_path / "config" / "study_config.json"
-set_config_file(str(config_file))
+config = get_config()
 
-# Create API-only app
-app = Flask(__name__)
-api = Api(app, prefix='/api/v1')
+# Create API instance
+core_api = CoreAPIEndpoints(config.api, config.auth_key)
 
-# Setup core API routes
-core_api = CoreAPIEndpoints()
-core_api.api = api
-core_api.setup_core_routes()
-
-# Add health check endpoint
-@app.route('/health')
-def health_check():
-    return {{'status': 'healthy', 'service': 'study-framework-api'}}
+# Get the Flask app
+app = core_api.app
 
 if __name__ == "__main__":
     app.run()
@@ -626,32 +620,28 @@ Internal Web WSGI entry point for {study_name} (Dashboard - Priority #2)
 \"\"\"
 
 import sys
+import os
 from pathlib import Path
 
-# Add the study directory to Python path
+# Add the submodule to Python path
 study_path = Path(__file__).parent
-sys.path.insert(0, str(study_path))
+submodule_path = study_path / "ubiwell-study-backend-core"
+sys.path.insert(0, str(submodule_path))
 
-from study_framework_core.core.config import set_config_file
-from study_framework_core.core.internal_web import InternalWebBase
-from study_framework_core.core.dashboard import DashboardBase
+# Set environment variable for config
+os.environ['STUDY_CONFIG_FILE'] = str(study_path / "config" / "study_config.json")
+
+from study_framework_core.core.config import get_config
+from study_framework_core.core.internal_web import InternalWebApp
 
 # Load configuration
-config_file = study_path / "config" / "study_config.json"
-set_config_file(str(config_file))
+config = get_config()
 
-# Create internal web app
-from flask import Flask
-app = Flask(__name__)
+# Create internal web instance
+internal_web = InternalWebApp(config.internal_web, config.auth_key)
 
-# Setup internal web routes
-dashboard = DashboardBase()
-internal_web = InternalWebBase(app, dashboard)
-
-# Add health check endpoint
-@app.route('/health')
-def health_check():
-    return {{'status': 'healthy', 'service': 'study-framework-internal'}}
+# Get the Flask app
+app = internal_web.app
 
 if __name__ == "__main__":
     app.run()
