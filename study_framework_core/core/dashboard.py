@@ -104,15 +104,17 @@ class DashboardBase(ABC):
             'garmin_worn': 0.0,
             'garmin_on': 0.0,
             'distance_traveled': 0.0,
-            'details': f"<a href='/internal_web/dashboard/view/{uid}/{date_str}'>Details</a>"
+            'details': f"<a href='/internal_web/dashboard/view/{uid}/{date_str}' class='btn-details'>View Details</a>"
         }
         
         if daily_summary:
+            # Get location data from nested structure
+            location_data = daily_summary.get("location", {})
             core_data.update({
-                'phone_duration': daily_summary.get("location_duration", 0.0),
+                'phone_duration': location_data.get("duration_hours", 0.0),
                 'garmin_worn': daily_summary.get("garmin_wear_duration", 0.0),
                 'garmin_on': daily_summary.get("garmin_on_duration", 0.0),
-                'distance_traveled': daily_summary.get("distance", 0.0)
+                'distance_traveled': location_data.get("distance_traveled", 0.0)
             })
         
         return core_data
@@ -212,6 +214,34 @@ class DashboardBase(ABC):
             next_date = None
             most_recent_date = datetime.now().date().strftime("%m-%d-%y")
         
+        # Calculate statistics
+        active_users = 0
+        total_ema_responses = 0
+        total_garmin_hours = 0
+        garmin_users = 0
+        
+        for user in users:
+            uid = user['uid']
+            user_row_data = self.generate_row_data(user, date_str)
+            
+            # Count active users (those with any data)
+            if (user_row_data.get('phone_duration', 0) > 0 or 
+                user_row_data.get('garmin_worn', 0) > 0 or 
+                user_row_data.get('garmin_on', 0) > 0):
+                active_users += 1
+            
+            # Count EMA responses (simplified - you might want to get this from actual data)
+            if 'ema_responses' in user_row_data:
+                total_ema_responses += len(user_row_data['ema_responses'])
+            
+            # Calculate average Garmin hours
+            garmin_hours = user_row_data.get('garmin_on', 0)
+            if garmin_hours > 0:
+                total_garmin_hours += garmin_hours
+                garmin_users += 1
+        
+        avg_garmin_hours = total_garmin_hours / garmin_users if garmin_users > 0 else 0
+        
         return {
             'rows_html': rows_html,
             'date_html': date_str,
@@ -221,7 +251,11 @@ class DashboardBase(ABC):
             'next_date': next_date,
             'most_recent_date': most_recent_date,
             'columns': self.get_all_columns(),
-            'refresh_config': self.get_refresh_config()
+            'refresh_config': self.get_refresh_config(),
+            'users': users,
+            'active_users': active_users,
+            'total_ema_responses': total_ema_responses,
+            'avg_garmin_hours': avg_garmin_hours
         }
     
     # NEW: Performance optimization methods

@@ -49,7 +49,10 @@ class InternalWebBase:
     def setup_session_config(self):
         """Setup session configuration."""
         self.app.secret_key = os.urandom(24)  # Generate a random secret key
-        self.app.config['SESSION_TYPE'] = 'filesystem'
+        self.app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Session lasts 15 minutes
+        self.app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP for development
+        self.app.config['SESSION_COOKIE_HTTPONLY'] = True
+        self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
     
     def setup_routes(self):
         """Setup internal web routes."""
@@ -133,6 +136,8 @@ class LoginHandler(Resource):
             if result['success']:
                 session['admin_logged_in'] = True
                 session['admin_username'] = username
+                session.permanent = True  # Make session permanent
+                logging.info(f"Login successful for {username}, session: {dict(session)}")
                 return {'success': True, 'redirect': '/internal_web/'}, 200
             else:
                 return {'success': False, 'error': result['error']}, 401
@@ -225,7 +230,9 @@ class ViewDashboardDate(Resource):
 class ViewUserDetail(Resource):
     """View detailed user information."""
     def get(self, user, date):
+        logging.info(f"ViewUserDetail accessed - Session: {dict(session)}")
         if 'admin_logged_in' not in session:
+            logging.warning(f"User not logged in, redirecting to login. Session keys: {list(session.keys())}")
             return redirect('/internal_web/login')
         
         config = get_config()
