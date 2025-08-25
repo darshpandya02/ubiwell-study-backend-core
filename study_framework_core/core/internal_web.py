@@ -39,6 +39,11 @@ class HealthCheck(Resource):
 class SessionDebug(Resource):
     """Debug endpoint to check session state."""
     def get(self):
+        # Check for session corruption and clean up if needed
+        if session and not session.get('admin_logged_in') and len(session.keys()) > 0:
+            logging.warning("Detected corrupted session, clearing it")
+            session.clear()
+        
         session_info = {
             'session_keys': list(session.keys()),
             'admin_logged_in': session.get('admin_logged_in', 'NOT_FOUND'),
@@ -47,7 +52,8 @@ class SessionDebug(Resource):
             'session_modified': session.modified,
             'request_headers': dict(request.headers),
             'request_host': request.host,
-            'request_scheme': request.scheme
+            'request_scheme': request.scheme,
+            'session_cookie': request.cookies.get('session', 'NOT_FOUND')
         }
         return session_info, 200
 
@@ -64,7 +70,9 @@ class InternalWebBase:
     
     def setup_session_config(self):
         """Setup session configuration."""
-        self.app.secret_key = os.urandom(24)  # Generate a random secret key
+        # Use a consistent secret key to prevent session invalidation on app restarts
+        # In production, this should be stored in environment variables
+        self.app.secret_key = 'bean-study-internal-web-secret-key-2024'
         self.app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Session lasts 15 minutes
         
         # Configure session security based on environment
@@ -80,6 +88,7 @@ class InternalWebBase:
         
         # Add debugging for session configuration
         logging.info(f"Session configuration:")
+        logging.info(f"  SECRET_KEY: {self.app.secret_key[:10]}... (consistent)")
         logging.info(f"  SECURE: {self.app.config['SESSION_COOKIE_SECURE']}")
         logging.info(f"  HTTPONLY: {self.app.config['SESSION_COOKIE_HTTPONLY']}")
         logging.info(f"  SAMESITE: {self.app.config['SESSION_COOKIE_SAMESITE']}")
@@ -136,15 +145,23 @@ def require_auth(f):
     def decorated_function(*args, **kwargs):
         logging.info(f"Auth check for {f.__name__} - Session keys: {list(session.keys())}")
         logging.info(f"Session admin_logged_in: {session.get('admin_logged_in', 'NOT_FOUND')}")
+        logging.info(f"Session admin_username: {session.get('admin_username', 'NOT_FOUND')}")
         
-        if 'admin_logged_in' not in session:
+        # Check if session is valid and user is logged in
+        if 'admin_logged_in' not in session or not session.get('admin_logged_in'):
             logging.warning(f"User not logged in, redirecting to login from {f.__name__}")
+            return redirect('/internal_web/login')
+        
+        # Validate session data integrity
+        if 'admin_username' not in session:
+            logging.warning(f"Session corrupted - missing admin_username, clearing session")
+            session.clear()
             return redirect('/internal_web/login')
         
         # Refresh session on each request to prevent timeout
         session.permanent = True
         session.modified = True
-        logging.info(f"Session refreshed for {f.__name__}")
+        logging.info(f"Session refreshed for {f.__name__} - User: {session.get('admin_username')}")
         
         return f(*args, **kwargs)
     return decorated_function
