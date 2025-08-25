@@ -232,5 +232,46 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script>
+        // Ensure Plotly is loaded and plots are rendered
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, checking Plotly...');
+            
+            function renderPlots() {
+                if (typeof Plotly !== 'undefined') {
+                    console.log('Plotly is available, rendering plots...');
+                    
+                    // Find all plotly-graph-div elements and render them
+                    var plotDivs = document.querySelectorAll('.plotly-graph-div');
+                    plotDivs.forEach(function(div) {
+                        if (div.children.length === 0) {
+                            // This div hasn't been rendered yet
+                            console.log('Found unrendered plot div:', div.id);
+                            
+                            // Look for the script that contains the plot data
+                            var scripts = document.querySelectorAll('script[type="text/javascript"]');
+                            scripts.forEach(function(script) {
+                                if (script.textContent.includes(div.id) && script.textContent.includes('Plotly.newPlot')) {
+                                    console.log('Found plot script for div:', div.id);
+                                    try {
+                                        // Execute the plot script
+                                        eval(script.textContent);
+                                    } catch (e) {
+                                        console.error('Error rendering plot:', e);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    console.log('Plotly not available yet, retrying in 100ms...');
+                    setTimeout(renderPlots, 100);
+                }
+            }
+            
+            // Start the rendering process
+            renderPlots();
+        });
+    </script>
 </body>
 </html>

@@ -36,6 +36,22 @@ class HealthCheck(Resource):
         return {'status': 'healthy', 'service': 'study-framework-internal'}, 200
 
 
+class SessionDebug(Resource):
+    """Debug endpoint to check session state."""
+    def get(self):
+        session_info = {
+            'session_keys': list(session.keys()),
+            'admin_logged_in': session.get('admin_logged_in', 'NOT_FOUND'),
+            'admin_username': session.get('admin_username', 'NOT_FOUND'),
+            'session_permanent': session.permanent,
+            'session_modified': session.modified,
+            'request_headers': dict(request.headers),
+            'request_host': request.host,
+            'request_scheme': request.scheme
+        }
+        return session_info, 200
+
+
 class InternalWebBase:
     """Base class for internal web functionality."""
     
@@ -56,11 +72,19 @@ class InternalWebBase:
         self.app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow all domains
         self.app.config['SESSION_COOKIE_PATH'] = '/'
         self.app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Refresh session on each request
+        
+        # Add debugging for session configuration
+        logging.info(f"Session configuration:")
+        logging.info(f"  SECURE: {self.app.config['SESSION_COOKIE_SECURE']}")
+        logging.info(f"  HTTPONLY: {self.app.config['SESSION_COOKIE_HTTPONLY']}")
+        logging.info(f"  SAMESITE: {self.app.config['SESSION_COOKIE_SAMESITE']}")
+        logging.info(f"  LIFETIME: {self.app.config['PERMANENT_SESSION_LIFETIME']}")
     
     def setup_routes(self):
         """Setup internal web routes."""
         # Health check route
         self.api.add_resource(HealthCheck, '/health')
+        self.api.add_resource(SessionDebug, '/session-debug')
         
         # Authentication routes
         self.api.add_resource(LoginPage, '/login')
@@ -104,12 +128,17 @@ def handle_response(message, status):
 def require_auth(f):
     """Decorator to require authentication for internal web endpoints."""
     def decorated_function(*args, **kwargs):
+        logging.info(f"Auth check for {f.__name__} - Session keys: {list(session.keys())}")
+        logging.info(f"Session admin_logged_in: {session.get('admin_logged_in', 'NOT_FOUND')}")
+        
         if 'admin_logged_in' not in session:
+            logging.warning(f"User not logged in, redirecting to login from {f.__name__}")
             return redirect('/internal_web/login')
         
         # Refresh session on each request to prevent timeout
         session.permanent = True
         session.modified = True
+        logging.info(f"Session refreshed for {f.__name__}")
         
         return f(*args, **kwargs)
     return decorated_function
@@ -145,7 +174,12 @@ class LoginHandler(Resource):
                 session['admin_logged_in'] = True
                 session['admin_username'] = username
                 session.permanent = True  # Make session permanent
-                logging.info(f"Login successful for {username}, session: {dict(session)}")
+                session.modified = True
+                
+                logging.info(f"Login successful for {username}")
+                logging.info(f"Session after login: {dict(session)}")
+                logging.info(f"Request headers: {dict(request.headers)}")
+                
                 return {'success': True, 'redirect': '/internal_web/'}, 200
             else:
                 return {'success': False, 'error': result['error']}, 401
