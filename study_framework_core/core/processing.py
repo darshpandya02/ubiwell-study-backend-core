@@ -216,10 +216,14 @@ class DataProcessorBase(ABC):
         """Get sensor data information."""
         try:
             # Count sensor records
-            garmin_hr_count = db['garmin_hr'].count_documents({
+            # Only count Garmin heart rate records where heart rate value is > 0
+            garmin_hr_records = list(db['garmin_hr'].find({
                 'uid': uid, 
                 'timestamp': {'$gte': start_time, '$lt': end_time}
-            })
+            }))
+            
+            # Filter for records with heart rate > 0 in Python (more efficient than non-indexed query)
+            garmin_hr_count = sum(1 for record in garmin_hr_records if record.get('heart_rate', 0) > 0)
             stress_count = db['garmin_stress'].count_documents({
                 'uid': uid, 
                 'timestamp': {'$gte': start_time, '$lt': end_time}

@@ -1665,10 +1665,14 @@ class DataProcessor:
         """Get Garmin device information for a user."""
         try:
             # Get Garmin heart rate records (indicates device is worn)
-            garmin_hr_count = self.db[self.config.collections.GARMIN_HR].count_documents({
+            # Only count records where heart rate value is > 0
+            garmin_hr_records = list(self.db[self.config.collections.GARMIN_HR].find({
                 'uid': uid,
                 'timestamp': {'$gte': start_timestamp, '$lt': end_timestamp}
-            })
+            }))
+            
+            # Filter for records with heart rate > 0 in Python (more efficient than non-indexed query)
+            garmin_hr_count = sum(1 for record in garmin_hr_records if record.get('heart_rate', 0) > 0)
             
             # Get Garmin stress records (indicates device is on and monitoring)
             garmin_stress_count = self.db[self.config.collections.GARMIN_STRESS].count_documents({
