@@ -493,7 +493,7 @@ WantedBy=multi-user.target
     return api_service_name, internal_service_name
 
 
-def create_nginx_config(study_name, api_service_name, internal_service_name):
+def create_nginx_config(study_name, api_service_name, internal_service_name, test_config=True):
     """Create nginx configuration with separate services."""
     nginx_config = f"""# {study_name} Nginx Configuration (Separate Services)
 
@@ -551,12 +551,15 @@ location /static/ {{
     
     os.symlink(nginx_file, nginx_enabled)
     
-    # Test nginx configuration
-    if run_command("nginx -t", check=False):
-        print("✅ Nginx configuration is valid")
-        run_command("systemctl reload nginx")
+    # Test nginx configuration (only if requested)
+    if test_config:
+        if run_command("nginx -t", check=False):
+            print("✅ Nginx configuration is valid")
+            run_command("systemctl reload nginx")
+        else:
+            print("❌ Nginx configuration is invalid. Please check the configuration.")
     else:
-        print("❌ Nginx configuration is invalid. Please check the configuration.")
+        print("⚠️  Nginx configuration created but not tested (will test after services are ready)")
     
     return nginx_file
 
@@ -1016,14 +1019,14 @@ def main():
     # Install packages
     install_packages(env_name, Path.cwd(), conda_path)
     
+    # Create WSGI files first
+    api_wsgi_file, internal_wsgi_file = create_wsgi_files(study_dir, args.study_name)
+    
     # Create systemd services
     api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.study_path, conda_path)
     
-    # Create nginx configuration
-    nginx_file = create_nginx_config(args.study_name, api_service_name, internal_service_name)
-    
-    # Create WSGI files
-    api_wsgi_file, internal_wsgi_file = create_wsgi_files(study_dir, args.study_name)
+    # Create nginx configuration (but don't test/reload yet)
+    nginx_file = create_nginx_config(args.study_name, api_service_name, internal_service_name, test_config=False)
     
     # Create sample config files
     create_sample_config_files(study_dir)
@@ -1060,6 +1063,15 @@ def main():
     
     # Set proper ownership
     run_command(f"chown -R {args.user}:{args.user} {study_dir}")
+    
+    # Test and reload nginx now that everything is set up
+    print("🌐 Testing and reloading nginx configuration...")
+    if run_command("nginx -t", check=False):
+        print("✅ Nginx configuration is valid")
+        run_command("systemctl reload nginx")
+        print("✅ Nginx reloaded successfully")
+    else:
+        print("❌ Nginx configuration is invalid. Please check the configuration.")
     
     print(f"\n✅ Study setup completed successfully with separate services!")
     print(f"📁 Study directory: {study_dir}")
