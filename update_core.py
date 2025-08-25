@@ -196,6 +196,15 @@ def update_core_framework(study_path, study_name=None):
     update_command = f"{conda_path} run -n {env_name} pip install --upgrade {Path.cwd()}/study_framework_core/"
     run_command(update_command)
     
+    # Install/update requirements to ensure all dependencies are available
+    print("📦 Installing/updating requirements...")
+    requirements_file = Path.cwd() / "study_framework_core" / "requirements.txt"
+    if requirements_file.exists():
+        install_command = f"{conda_path} run -n {env_name} pip install -r {requirements_file}"
+        run_command(install_command)
+    else:
+        print("⚠️  Warning: requirements.txt not found in core framework")
+    
     # Copy updated core framework files to study directory
     print("📁 Copying updated core framework files...")
     copy_core_framework(study_path, study_path.name)
