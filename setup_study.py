@@ -382,7 +382,8 @@ def install_packages(env_name, study_path, conda_path=None):
 
 def create_directory_structure(study_name, base_dir, user):
     """Create the directory structure for the study."""
-    study_dir = Path(base_dir) / study_name.lower().replace(' ', '-')
+    # Use the base_dir directly as the study directory (no nested folder)
+    study_dir = Path(base_dir)
     
     directories = [
         study_dir,
