@@ -173,38 +173,182 @@ python update_core.py
 
 
 def check_anaconda():
-    """Check if Anaconda/Miniconda is installed."""
-    conda_path = shutil.which('conda')
-    if not conda_path:
-        print("❌ Anaconda/Miniconda not found. Please install it first.")
-        print("Download from: https://docs.conda.io/en/latest/miniconda.html")
-        sys.exit(1)
+    """Check if Anaconda/Miniconda is installed and find the best path."""
+    print("🔍 Looking for Anaconda/Miniconda installations...")
     
-    print(f"✅ Found conda at: {conda_path}")
-    return conda_path
+    # Common Anaconda installation paths (since we're running as sudo)
+    common_paths = [
+        "/mnt/study/anaconda3/bin/conda",
+        "/opt/anaconda3/bin/conda",
+        "/usr/local/anaconda3/bin/conda",
+        "/home/*/anaconda3/bin/conda",
+        "/home/*/miniconda3/bin/conda",
+        "/usr/share/anaconda3/bin/conda",
+        "/usr/share/miniconda3/bin/conda",
+    ]
+    
+    found_installations = []
+    
+    # Check each common path
+    for path_pattern in common_paths:
+        if '*' in path_pattern:
+            # Handle glob patterns
+            import glob
+            matches = glob.glob(path_pattern)
+            for match in matches:
+                if os.path.exists(match):
+                    found_installations.append(match)
+        else:
+            # Direct path
+            if os.path.exists(path_pattern):
+                found_installations.append(path_pattern)
+    
+    # If found multiple installations, let user choose
+    if len(found_installations) > 1:
+        print(f"✅ Found {len(found_installations)} Anaconda/Miniconda installations:")
+        for i, path in enumerate(found_installations, 1):
+            print(f"  {i}. {path}")
+        
+        while True:
+            try:
+                choice = input(f"\nSelect installation (1-{len(found_installations)}) or press Enter for first option: ").strip()
+                if not choice:
+                    selected_path = found_installations[0]
+                    break
+                else:
+                    choice_idx = int(choice) - 1
+                    if 0 <= choice_idx < len(found_installations):
+                        selected_path = found_installations[choice_idx]
+                        break
+                    else:
+                        print(f"❌ Invalid choice. Please enter 1-{len(found_installations)}")
+            except ValueError:
+                print("❌ Invalid input. Please enter a number.")
+        
+        print(f"✅ Using conda at: {selected_path}")
+        return selected_path
+    
+    # If found exactly one installation
+    elif len(found_installations) == 1:
+        selected_path = found_installations[0]
+        print(f"✅ Found conda at: {selected_path}")
+        return selected_path
+    
+    # If no installations found
+    else:
+        print("❌ No Anaconda/Miniconda installations found in common locations.")
+        print("Common locations checked:")
+        for path in common_paths:
+            print(f"  - {path}")
+        
+        print("\n💡 Options:")
+        print("1. Install Anaconda/Miniconda automatically")
+        print("2. Provide the path to your conda installation")
+        print("3. Exit and install manually")
+        
+        while True:
+            choice = input("\nEnter your choice (1-3): ").strip()
+            
+            if choice == "1":
+                return install_anaconda()
+            elif choice == "2":
+                user_path = input("Enter the full path to conda: ").strip()
+                if os.path.exists(user_path):
+                    print(f"✅ Using conda at: {user_path}")
+                    return user_path
+                else:
+                    print(f"❌ Path does not exist: {user_path}")
+                    continue
+            elif choice == "3":
+                print("❌ Setup cancelled. Please install Anaconda/Miniconda manually.")
+                print("Download from: https://docs.conda.io/en/latest/miniconda.html")
+                sys.exit(1)
+            else:
+                print("❌ Invalid choice. Please enter 1, 2, or 3.")
 
 
-def create_conda_environment(study_name, python_version="3.9"):
+def install_anaconda():
+    """Install Anaconda/Miniconda automatically."""
+    print("🚀 Installing Anaconda/Miniconda...")
+    
+    # Ask user for installation path
+    while True:
+        install_path = input("Enter installation path (default: /mnt/study/anaconda3): ").strip()
+        if not install_path:
+            install_path = "/mnt/study/anaconda3"
+        
+        if os.path.exists(install_path):
+            overwrite = input(f"Path {install_path} already exists. Overwrite? (y/N): ").strip().lower()
+            if overwrite in ['y', 'yes']:
+                break
+            else:
+                continue
+        else:
+            break
+    
+    print(f"📦 Installing Anaconda to: {install_path}")
+    
+    # Download and install Miniconda
+    try:
+        # Create installation directory
+        os.makedirs(os.path.dirname(install_path), exist_ok=True)
+        
+        # Download Miniconda installer
+        import urllib.request
+        import tempfile
+        
+        miniconda_url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+        installer_path = "/tmp/miniconda_installer.sh"
+        
+        print("📥 Downloading Miniconda installer...")
+        urllib.request.urlretrieve(miniconda_url, installer_path)
+        
+        # Make installer executable
+        os.chmod(installer_path, 0o755)
+        
+        # Run installer
+        print("🔧 Running Miniconda installer...")
+        install_command = f"bash {installer_path} -b -p {install_path} -f"
+        run_command(install_command)
+        
+        # Clean up installer
+        os.remove(installer_path)
+        
+        conda_path = f"{install_path}/bin/conda"
+        if os.path.exists(conda_path):
+            print(f"✅ Anaconda installed successfully at: {conda_path}")
+            return conda_path
+        else:
+            print("❌ Installation failed. Conda not found at expected location.")
+            sys.exit(1)
+            
+    except Exception as e:
+        print(f"❌ Installation failed: {e}")
+        print("💡 Please install Anaconda/Miniconda manually from: https://docs.conda.io/en/latest/miniconda.html")
+        sys.exit(1)
+
+
+def create_conda_environment(study_name, python_version="3.9", conda_path=None):
     """Create a conda environment for the study."""
     env_name = f"{study_name.lower().replace(' ', '-')}-env"
     
     print(f"🔧 Creating conda environment: {env_name}")
     
     # Check if environment already exists
-    env_exists = run_command(f"conda env list | grep {env_name}", check=False, capture_output=True)
+    env_exists = run_command(f"{conda_path} env list | grep {env_name}", check=False, capture_output=True)
     
     if env_exists:
         print(f"⚠️  Environment {env_name} already exists. Removing it...")
-        run_command(f"conda env remove -n {env_name} -y")
+        run_command(f"{conda_path} env remove -n {env_name} -y")
     
     # Create new environment
-    run_command(f"conda create -n {env_name} python={python_version} -y")
+    run_command(f"{conda_path} create -n {env_name} python={python_version} -y")
     
     print(f"✅ Created conda environment: {env_name}")
     return env_name
 
 
-def install_packages(env_name, study_path):
+def install_packages(env_name, study_path, conda_path=None):
     """Install required packages in the conda environment."""
     print(f"📦 Installing packages in {env_name}")
     
@@ -223,15 +367,15 @@ def install_packages(env_name, study_path):
     
     for package in conda_packages:
         print(f"  Installing {package}...")
-        run_command(f"conda run -n {env_name} pip install {package}")
+        run_command(f"{conda_path} run -n {env_name} pip install {package}")
     
     # Install the study framework core in editable mode for easy updates
     print("  Installing study-framework-core in editable mode...")
-    run_command(f"conda run -n {env_name} pip install -e .")
+    run_command(f"{conda_path} run -n {env_name} pip install -e .")
     
     # Install gunicorn
     print("  Installing gunicorn...")
-    run_command(f"conda run -n {env_name} pip install gunicorn")
+    run_command(f"{conda_path} run -n {env_name} pip install gunicorn")
     
     print("✅ All packages installed successfully")
 
@@ -860,13 +1004,13 @@ def main():
     ensure_gitmodules()
 
     # Create conda environment
-    env_name = create_conda_environment(args.study_name, args.python_version)
+    env_name = create_conda_environment(args.study_name, args.python_version, conda_path)
     
     # Create directory structure
     study_dir = create_directory_structure(args.study_name, args.study_path, args.user)
     
     # Install packages
-    install_packages(env_name, Path.cwd())
+    install_packages(env_name, Path.cwd(), conda_path)
     
     # Create systemd services
     api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.study_path)
