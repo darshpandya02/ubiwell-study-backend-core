@@ -74,7 +74,7 @@
         <div class="col-auto">
             <div class="btn-group" role="group" aria-label="Date navigation">
                 {% if previous_date %}
-                    <a href="{{ url_for('viewdashboarddate', date=previous_date) }}" class="btn btn-outline-primary">
+                    <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=previous_date) }}" class="btn btn-outline-primary">
                         <i class="fas fa-chevron-left me-1"></i>Previous Day
                     </a>
                 {% endif %}
@@ -86,7 +86,7 @@
                 {% endif %}
                 
                 {% if next_date %}
-                    <a href="{{ url_for('viewdashboarddate', date=next_date) }}" class="btn btn-outline-primary">
+                    <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=next_date) }}" class="btn btn-outline-primary">
                         Next Day<i class="fas fa-chevron-right ms-1"></i>
                     </a>
                 {% endif %}
@@ -103,17 +103,17 @@
         <div class="col-auto">
             <div class="btn-group" role="group" aria-label="User detail navigation">
                 {% if previous_date %}
-                    <a href="{{ url_for(request.endpoint, user=user, date=previous_date) }}" class="btn btn-outline-secondary">
+                    <a href="https://{{ request.host }}{{ url_for(request.endpoint, user=user, date=previous_date) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-chevron-left me-1"></i>Previous Day
                     </a>
                 {% endif %}
                 
-                <a href="{{ url_for('viewdashboarddate', date=date) }}" class="btn btn-secondary">
+                <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=date) }}" class="btn btn-secondary">
                     <i class="fas fa-list me-1"></i>Back to Dashboard
                 </a>
                 
                 {% if next_date %}
-                    <a href="{{ url_for(request.endpoint, user=user, date=next_date) }}" class="btn btn-outline-secondary">
+                    <a href="https://{{ request.host }}{{ url_for(request.endpoint, user=user, date=next_date) }}" class="btn btn-outline-secondary">
                         Next Day<i class="fas fa-chevron-right ms-1"></i>
                     </a>
                 {% endif %}

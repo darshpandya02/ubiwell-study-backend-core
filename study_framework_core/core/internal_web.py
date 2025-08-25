@@ -182,6 +182,10 @@ class ViewDashboard(Resource):
         if 'admin_logged_in' not in session:
             return redirect('/internal_web/login')
         
+        # Refresh session on each request
+        session.permanent = True
+        session.modified = True
+        
         logging.info(f"ViewDashboard accessed by {session.get('admin_username')}")
         
         # Get yesterday's date as default
@@ -208,6 +212,10 @@ class ViewDashboardDate(Resource):
     def get(self, date):
         if 'admin_logged_in' not in session:
             return redirect('/internal_web/login')
+        
+        # Refresh session on each request
+        session.permanent = True
+        session.modified = True
         
         logging.info(f"ViewDashboardDate accessed by {session.get('admin_username')}, date: {date}")
         

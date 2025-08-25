@@ -198,7 +198,7 @@ def update_core_framework(study_path, study_name=None):
     
     # Install/update requirements to ensure all dependencies are available
     print("📦 Installing/updating requirements...")
-    requirements_file = Path.cwd() / "study_framework_core" / "requirements.txt"
+    requirements_file = Path.cwd() / "requirements.txt"
     if requirements_file.exists():
         install_command = f"{conda_path} run -n {env_name} pip install -r {requirements_file}"
         run_command(install_command)

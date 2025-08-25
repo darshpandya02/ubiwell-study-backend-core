@@ -230,16 +230,16 @@
             
             <!-- Quick Actions -->
             <div class="quick-actions">
-                <a href="{{ url_for('viewdashboarddate', date=most_recent_date) }}" class="btn-quick-action">
+                <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=most_recent_date) }}" class="btn-quick-action">
                     <i class="fas fa-clock"></i>Most Recent
                 </a>
-                <a href="/internal_web/user-management" class="btn-quick-action">
+                <a href="https://{{ request.host }}/internal_web/user-management" class="btn-quick-action">
                     <i class="fas fa-users"></i>Manage Users
                 </a>
-                <a href="/internal_web/ema-schedule" class="btn-quick-action">
+                <a href="https://{{ request.host }}/internal_web/ema-schedule" class="btn-quick-action">
                     <i class="fas fa-calendar-alt"></i>EMA Schedule
                 </a>
-                <a href="/internal_web/download_compliance" class="btn-quick-action">
+                <a href="https://{{ request.host }}/internal_web/download_compliance" class="btn-quick-action">
                     <i class="fas fa-download"></i>Export Data
                 </a>
             </div>
