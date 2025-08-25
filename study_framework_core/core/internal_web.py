@@ -66,7 +66,12 @@ class InternalWebBase:
         """Setup session configuration."""
         self.app.secret_key = os.urandom(24)  # Generate a random secret key
         self.app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Session lasts 15 minutes
-        self.app.config['SESSION_COOKIE_SECURE'] = True  # Require HTTPS
+        
+        # Configure session security based on environment
+        # In production with proper HTTPS, this should be True
+        # For now, set to False to allow HTTP (since X-Forwarded-Proto is http)
+        self.app.config['SESSION_COOKIE_SECURE'] = False
+        
         self.app.config['SESSION_COOKIE_HTTPONLY'] = True
         self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
         self.app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow all domains
@@ -79,6 +84,7 @@ class InternalWebBase:
         logging.info(f"  HTTPONLY: {self.app.config['SESSION_COOKIE_HTTPONLY']}")
         logging.info(f"  SAMESITE: {self.app.config['SESSION_COOKIE_SAMESITE']}")
         logging.info(f"  LIFETIME: {self.app.config['PERMANENT_SESSION_LIFETIME']}")
+        logging.info(f"  NOTE: SESSION_COOKIE_SECURE set to False because X-Forwarded-Proto is http")
     
     def setup_routes(self):
         """Setup internal web routes."""
