@@ -263,6 +263,11 @@ class ViewUserDetail(Resource):
             processor = DataProcessor()
             plots = processor.generate_user_plots(user, date)
             
+            # Log plot generation results for debugging
+            logging.info(f"Generated plots for {user} on {date}: {list(plots.keys())}")
+            logging.info(f"Daily plot length: {len(plots.get('daily_plot', ''))}")
+            logging.info(f"Weekly trends length: {len(plots.get('weekly_trends', ''))}")
+            
             # Combine plots into a single HTML content
             plot_content = f"""
             <div class="plot-section mb-4">
@@ -270,7 +275,7 @@ class ViewUserDetail(Resource):
                     <i class="fas fa-chart-line me-2"></i>Daily Activity
                 </h3>
                 <div class="plot-container">
-                    {plots['daily_plot']}
+                    {plots.get('daily_plot', '<p>No daily data available</p>')}
                 </div>
             </div>
             
@@ -279,7 +284,7 @@ class ViewUserDetail(Resource):
                     <i class="fas fa-chart-bar me-2"></i>Weekly Trends
                 </h3>
                 <div class="plot-container">
-                    {plots['weekly_trends']}
+                    {plots.get('weekly_trends', '<p>No weekly data available</p>')}
                 </div>
             </div>
             """

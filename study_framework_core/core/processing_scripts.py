@@ -1313,6 +1313,11 @@ class DataProcessor:
             # Generate weekly trends
             weekly_trends_html = self._generate_weekly_trends(uid, current_date)
             
+            # Log for debugging
+            self.logger.info(f"Generated plots for {uid} on {date_str}")
+            self.logger.info(f"Daily plot length: {len(daily_plot_html)}")
+            self.logger.info(f"Weekly trends length: {len(weekly_trends_html)}")
+            
             return {
                 'daily_plot': daily_plot_html,
                 'weekly_trends': weekly_trends_html
@@ -1320,8 +1325,30 @@ class DataProcessor:
             
         except Exception as e:
             self.logger.error(f"Error generating plots for {uid} on {date_str}: {e}")
+            # Return a simple test plot to verify the system works
+            test_plot = """
+            <div id="test-plot" style="width:100%; height:400px;">
+                <script>
+                    var data = [{
+                        x: [1, 2, 3, 4],
+                        y: [10, 11, 12, 13],
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: 'Test Data'
+                    }];
+                    
+                    var layout = {
+                        title: 'Test Plot - Plotly is working!',
+                        xaxis: {title: 'X Axis'},
+                        yaxis: {title: 'Y Axis'}
+                    };
+                    
+                    Plotly.newPlot('test-plot', data, layout);
+                </script>
+            </div>
+            """
             return {
-                'daily_plot': f"<p>Error generating plot: {str(e)}</p>",
+                'daily_plot': f"<p>Error generating plot: {str(e)}</p>{test_plot}",
                 'weekly_trends': f"<p>Error generating trends: {str(e)}</p>"
             }
     
