@@ -270,16 +270,26 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-user me-1"></i>User</th>
-                        <th><i class="fas fa-mobile-alt me-1"></i>Phone Duration</th>
-                        <th><i class="fas fa-heartbeat me-1"></i>Garmin Worn</th>
-                        <th><i class="fas fa-battery-three-quarters me-1"></i>Garmin On</th>
-                        <th><i class="fas fa-route me-1"></i>Distance</th>
-                        <th><i class="fas fa-chart-line me-1"></i>Details</th>
-                        <th><i class="fas fa-clipboard-list me-1"></i>EMA</th>
-                        <th><i class="fas fa-mobile me-1"></i>App Events</th>
-                        <th><i class="fas fa-video me-1"></i>Daily Diary</th>
-                        <th><i class="fas fa-brain me-1"></i>Depression</th>
+                        {% for column in columns %}
+                        <th>
+                            {% if column.name == 'user' %}
+                                <i class="fas fa-user me-1"></i>
+                            {% elif column.name == 'phone_duration' %}
+                                <i class="fas fa-mobile-alt me-1"></i>
+                            {% elif column.name == 'garmin_worn' %}
+                                <i class="fas fa-heartbeat me-1"></i>
+                            {% elif column.name == 'garmin_on' %}
+                                <i class="fas fa-battery-three-quarters me-1"></i>
+                            {% elif column.name == 'distance_traveled' %}
+                                <i class="fas fa-route me-1"></i>
+                            {% elif column.name == 'details' %}
+                                <i class="fas fa-chart-line me-1"></i>
+                            {% else %}
+                                <i class="fas fa-columns me-1"></i>
+                            {% endif %}
+                            {{ column.header }}
+                        </th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>

@@ -50,9 +50,12 @@ class InternalWebBase:
         """Setup session configuration."""
         self.app.secret_key = os.urandom(24)  # Generate a random secret key
         self.app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Session lasts 15 minutes
-        self.app.config['SESSION_COOKIE_SECURE'] = False  # Allow HTTP for development
+        self.app.config['SESSION_COOKIE_SECURE'] = True  # Require HTTPS
         self.app.config['SESSION_COOKIE_HTTPONLY'] = True
         self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+        self.app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow all domains
+        self.app.config['SESSION_COOKIE_PATH'] = '/'
+        self.app.config['SESSION_REFRESH_EACH_REQUEST'] = True  # Refresh session on each request
     
     def setup_routes(self):
         """Setup internal web routes."""
@@ -103,6 +106,11 @@ def require_auth(f):
     def decorated_function(*args, **kwargs):
         if 'admin_logged_in' not in session:
             return redirect('/internal_web/login')
+        
+        # Refresh session on each request to prevent timeout
+        session.permanent = True
+        session.modified = True
+        
         return f(*args, **kwargs)
     return decorated_function
 
@@ -242,25 +250,46 @@ class ViewUserDetail(Resource):
             previous_date = (current_date - timedelta(days=1)).strftime("%m-%d-%y")
             next_date = (current_date + timedelta(days=1)).strftime("%m-%d-%y")
             
-            # Look for user detail plot
-            plot_path = os.path.join(config.paths.static_dir, user, f"{date}.html")
+            # Generate plots on-the-fly
+            from study_framework_core.core.processing_scripts import DataProcessor
+            processor = DataProcessor()
+            plots = processor.generate_user_plots(user, date)
             
-            if os.path.exists(plot_path):
-                with open(plot_path, 'r') as file:
-                    plot_content = file.read()
-                return Response(
-                    render_template('user_detail.html', 
-                                  user=user, date=date,
-                                  plot_content=Markup(plot_content), 
-                                  previous_date=previous_date,
-                                  next_date=next_date), 
-                    mimetype='text/html'
-                )
-            else:
-                return {"message": "Plot not found", "status": 404}, 404
+            # Combine plots into a single HTML content
+            plot_content = f"""
+            <div class="plot-section mb-4">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-line me-2"></i>Daily Activity
+                </h3>
+                <div class="plot-container">
+                    {plots['daily_plot']}
+                </div>
+            </div>
+            
+            <div class="plot-section">
+                <h3 class="section-title">
+                    <i class="fas fa-chart-bar me-2"></i>Weekly Trends
+                </h3>
+                <div class="plot-container">
+                    {plots['weekly_trends']}
+                </div>
+            </div>
+            """
+            
+            return Response(
+                render_template('user_detail.html', 
+                              user=user, date=date,
+                              plot_content=Markup(plot_content), 
+                              previous_date=previous_date,
+                              next_date=next_date), 
+                mimetype='text/html'
+            )
                 
         except ValueError as e:
             return {"message": "Invalid date format", "status": 400}, 400
+        except Exception as e:
+            logging.error(f"Error generating plots for {user} on {date}: {e}")
+            return {"message": f"Error generating plots: {str(e)}", "status": 500}, 500
 
 
 class ViewUserEma(Resource):

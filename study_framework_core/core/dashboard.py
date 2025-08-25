@@ -95,9 +95,6 @@ class DashboardBase(ABC):
         # Get daily summary for the specified date
         daily_summary = db[config.collections.DAILY_SUMMARY].find_one({'uid': uid, "date": date_timestamp})
         
-        # Check for daily diary file
-        daily_diary_exists = self._check_daily_diary(uid, date_str, config)
-        
         core_data = {
             'user': uid,
             'phone_duration': 0.0,
@@ -118,24 +115,6 @@ class DashboardBase(ABC):
             })
         
         return core_data
-    
-    def _check_daily_diary(self, uid: str, date_str: str, config) -> bool:
-        """Check if daily diary file exists for the user and date."""
-        try:
-            date_obj = datetime.strptime(date_str, "%m-%d-%y")
-            date_str_formatted = date_obj.strftime("%Y%m%d")
-            filename_pattern = f"DailyDiary_{date_str_formatted}_"
-            
-            daily_diary_path = os.path.join(config.paths.active_sensing_upload_path, str(uid), 'daily_diaries/')
-            
-            if os.path.exists(daily_diary_path):
-                for file_name in os.listdir(daily_diary_path):
-                    if file_name.startswith(filename_pattern) and file_name.lower().endswith('.mp4'):
-                        return True
-            return False
-        except Exception as e:
-            self.logger.error(f"Error checking daily diary for user {uid}: {e}")
-            return False
     
     @abstractmethod
     def generate_custom_row_data(self, user_data: Dict[str, Any], date_str: str) -> Dict[str, Any]:

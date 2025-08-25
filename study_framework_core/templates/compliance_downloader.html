@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Framework - Data Export</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --border-radius: 10px;
+            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+        
+        .main-container {
+            padding: 2rem 0;
+        }
+        
+        .content-section {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-control {
+            border-radius: var(--border-radius);
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, var(--success-color) 0%, #20c997 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+        
+        .download-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+        }
+        
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    {% include 'navigation.html' %}
+    
+    <!-- Main Content -->
+    <div class="container main-container">
+        <!-- Header -->
+        <div class="download-section">
+            <h1 class="section-title text-white">
+                <i class="fas fa-download me-2"></i>Data Export
+            </h1>
+            <p class="text-white-50 mb-0">Export aggregated compliance data and study metrics.</p>
+        </div>
+        
+        <!-- Export Form -->
+        <div class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-file-export me-2"></i>Export Compliance Data
+            </h2>
+            
+            <form id="exportForm" class="row g-3">
+                <div class="col-md-6">
+                    <label for="startDate" class="form-label">
+                        <i class="fas fa-calendar-day me-1"></i>Start Date
+                    </label>
+                    <input type="date" class="form-control" id="startDate" required>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="endDate" class="form-label">
+                        <i class="fas fa-calendar-day me-1"></i>End Date
+                    </label>
+                    <input type="date" class="form-control" id="endDate" required>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="type" class="form-label">
+                        <i class="fas fa-chart-bar me-1"></i>Export Type
+                    </label>
+                    <select class="form-select" id="type" required>
+                        <option value="">Choose export type...</option>
+                        <option value="daily">Daily Summary</option>
+                        <option value="aggregation">Aggregated Data</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="format" class="form-label">
+                        <i class="fas fa-file-alt me-1"></i>Format
+                    </label>
+                    <select class="form-select" id="format" required>
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                        <option value="excel">Excel</option>
+                    </select>
+                </div>
+                
+                <div class="col-12">
+                    <button type="submit" class="btn btn-download">
+                        <i class="fas fa-download me-1"></i>Export Data
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Status Messages -->
+            <div id="output" class="mt-3"></div>
+        </div>
+        
+        <!-- Quick Export Options -->
+        <div class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-bolt me-2"></i>Quick Export Options
+            </h2>
+            
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-week fa-2x text-primary mb-3"></i>
+                            <h5 class="card-title">Last 7 Days</h5>
+                            <p class="card-text">Export data from the past week</p>
+                            <button class="btn btn-outline-primary btn-sm" onclick="quickExport('7days')">
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar-alt fa-2x text-success mb-3"></i>
+                            <h5 class="card-title">Last 30 Days</h5>
+                            <p class="card-text">Export data from the past month</p>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickExport('30days')">
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar fa-2x text-warning mb-3"></i>
+                            <h5 class="card-title">Current Month</h5>
+                            <p class="card-text">Export data from current month</p>
+                            <button class="btn btn-outline-warning btn-sm" onclick="quickExport('month')">
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set default dates
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+        });
+        
+        // Handle form submission
+        document.getElementById('exportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            downloadCSV();
+        });
+        
+        async function downloadCSV() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const type = document.getElementById('type').value;
+            const format = document.getElementById('format').value;
+            const output = document.getElementById('output');
+            
+            output.innerHTML = '';
+            
+            if (!startDate || !endDate || !type || !format) {
+                output.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-1"></i>Please fill in all fields.</div>';
+                return;
+            }
+            
+            // Show loading
+            output.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-1"></i>Preparing export...</div>';
+            
+            try {
+                const response = await fetch('/internal_web/download_compliance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        start_date: startDate,
+                        end_date: endDate,
+                        type: type,
+                        format: format
+                    })
+                });
+                
+                if (response.ok) {
+                    // Handle file download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `compliance_data_${startDate}_to_${endDate}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    output.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle me-1"></i>Export completed successfully!</div>';
+                } else {
+                    const error = await response.json();
+                    output.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-1"></i>${error.message || 'Export failed'}</div>`;
+                }
+            } catch (error) {
+                output.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-1"></i>Error: ${error.message}</div>`;
+            }
+        }
+        
+        function quickExport(period) {
+            const today = new Date();
+            let startDate = new Date();
+            
+            switch(period) {
+                case '7days':
+                    startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30days':
+                    startDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'month':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    break;
+            }
+            
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('type').value = 'daily';
+            document.getElementById('format').value = 'csv';
+            
+            downloadCSV();
+        }
+    </script>
+</body>
+</html>

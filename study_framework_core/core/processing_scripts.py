@@ -17,6 +17,7 @@ from collections import defaultdict
 import pandas as pd
 import pymongo
 from geopy import distance
+import plotly.graph_objects as go
 
 from study_framework_core.core.config import get_config
 from study_framework_core.core.handlers import get_db
@@ -1288,6 +1289,273 @@ class DataProcessor:
         except Exception as e:
             self.logger.error(f"Exception generating summaries for period: {e}")
             return False
+    
+    def generate_user_plots(self, uid: str, date_str: str) -> Dict[str, str]:
+        """
+        Generate plots for a specific user and date on-the-fly.
+        
+        Args:
+            uid: User ID
+            date_str: Date in MM-DD-YY format
+            
+        Returns:
+            Dictionary with plot HTML strings
+        """
+        try:
+            # Parse date
+            current_date = datetime.strptime(date_str, "%m-%d-%y")
+            start_timestamp = int(current_date.timestamp())
+            end_timestamp = int((current_date + timedelta(days=1)).timestamp())
+            
+            # Generate daily plot
+            daily_plot_html = self._generate_daily_plot(uid, current_date)
+            
+            # Generate weekly trends
+            weekly_trends_html = self._generate_weekly_trends(uid, current_date)
+            
+            return {
+                'daily_plot': daily_plot_html,
+                'weekly_trends': weekly_trends_html
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error generating plots for {uid} on {date_str}: {e}")
+            return {
+                'daily_plot': f"<p>Error generating plot: {str(e)}</p>",
+                'weekly_trends': f"<p>Error generating trends: {str(e)}</p>"
+            }
+    
+    def _generate_daily_plot(self, uid: str, current_date: datetime) -> str:
+        """Generate daily plot showing location, HR, and stress data."""
+        try:
+            # Create a fixed timeline for 24 hours with 1-second intervals
+            fixed_times = [current_date + timedelta(seconds=i) for i in range(86400)]
+            
+            # Get location availability (30-minute windows)
+            location_availability = self._get_location_availability(uid, current_date)
+            location_values = [0] * len(fixed_times)
+            
+            for i in range(len(location_availability)):
+                if location_availability[i] == 1:
+                    for j in range(i * 1800, (i + 1) * 1800):
+                        if j < len(location_values):
+                            location_values[j] = 1
+            
+            # Get HR data
+            hr_values, hr_times = self._get_hr_data(uid, current_date)
+            
+            # Get stress availability
+            stress_availability = self._get_stress_availability(uid, current_date)
+            stress_values = [0] * len(fixed_times)
+            
+            for i in range(len(stress_availability)):
+                if stress_availability[i] == 1:
+                    for j in range(i * 1800, (i + 1) * 1800):
+                        if j < len(stress_values):
+                            stress_values[j] = 2
+            
+            # Create plot
+            fig = go.Figure()
+            
+            # Add location availability plot
+            fig.add_trace(go.Scatter(
+                x=fixed_times, 
+                y=location_values, 
+                mode='lines', 
+                name='Location Availability',
+                line=dict(color='blue', width=2)
+            ))
+            
+            # Add HR data plot
+            if hr_times and hr_values:
+                fig.add_trace(go.Scatter(
+                    x=hr_times, 
+                    y=hr_values, 
+                    mode='markers', 
+                    name='Heart Rate',
+                    yaxis='y2',
+                    marker=dict(color='red', size=4)
+                ))
+            
+            # Add stress data plot
+            fig.add_trace(go.Scatter(
+                x=fixed_times, 
+                y=stress_values, 
+                mode='lines', 
+                name='Garmin On',
+                line=dict(color='green', width=2)
+            ))
+            
+            # Generate x-axis tick values and labels
+            tick_vals = [current_date + timedelta(hours=i) for i in range(25)]
+            tick_labels = [f"{i:02}:00" for i in range(24)] + ["00:00"]
+            
+            # Update layout
+            fig.update_layout(
+                title=f'Daily Activity for {uid} on {current_date.strftime("%m-%d-%y")}',
+                xaxis=dict(
+                    title='Time',
+                    tickmode='array',
+                    tickvals=tick_vals,
+                    ticktext=tick_labels,
+                    range=[fixed_times[0], fixed_times[-1]]
+                ),
+                yaxis=dict(
+                    title='Availability',
+                    side='left',
+                    range=[0, 3]
+                ),
+                yaxis2=dict(
+                    title='Heart Rate (BPM)',
+                    overlaying='y',
+                    side='right'
+                ),
+                legend=dict(
+                    x=0,
+                    y=1.1,
+                    orientation='h'
+                ),
+                height=500,
+                margin=dict(l=50, r=50, t=80, b=50)
+            )
+            
+            return fig.to_html(full_html=False, include_plotlyjs=False)
+            
+        except Exception as e:
+            self.logger.error(f"Error generating daily plot: {e}")
+            return f"<p>Error generating daily plot: {str(e)}</p>"
+    
+    def _generate_weekly_trends(self, uid: str, current_date: datetime) -> str:
+        """Generate weekly trends showing daily summaries."""
+        try:
+            # Get 7 days of data
+            end_date = current_date
+            start_date = end_date - timedelta(days=6)
+            
+            dates = []
+            hr_durations = []
+            stress_durations = []
+            location_durations = []
+            
+            # Get daily summaries
+            daily_summaries = list(self.db[self.config.collections.DAILY_SUMMARY].find({
+                'uid': uid,
+                'date': {
+                    '$gte': int(start_date.timestamp()),
+                    '$lte': int(end_date.timestamp())
+                }
+            }).sort('date', 1))
+            
+            for summary in daily_summaries:
+                date_obj = datetime.fromtimestamp(summary['date'])
+                dates.append(date_obj.strftime('%m-%d'))
+                
+                # Get location duration from nested structure
+                location_data = summary.get('location', {})
+                location_durations.append(location_data.get('duration_hours', 0))
+                
+                # Get Garmin durations
+                hr_durations.append(summary.get('garmin_wear_duration', 0))
+                stress_durations.append(summary.get('garmin_on_duration', 0))
+            
+            # Create plot
+            fig = go.Figure()
+            
+            # Add bar traces
+            fig.add_trace(go.Bar(
+                x=dates, 
+                y=location_durations, 
+                name='Location Duration',
+                marker_color='blue'
+            ))
+            
+            fig.add_trace(go.Bar(
+                x=dates, 
+                y=hr_durations, 
+                name='Heart Rate Duration',
+                marker_color='red'
+            ))
+            
+            fig.add_trace(go.Bar(
+                x=dates, 
+                y=stress_durations, 
+                name='Stress Duration',
+                marker_color='green'
+            ))
+            
+            # Update layout
+            fig.update_layout(
+                title=f'Weekly Trends for {uid}',
+                xaxis_title='Date',
+                yaxis_title='Duration (Hours)',
+                barmode='group',
+                height=400,
+                margin=dict(l=50, r=50, t=80, b=50)
+            )
+            
+            return fig.to_html(full_html=False, include_plotlyjs=False)
+            
+        except Exception as e:
+            self.logger.error(f"Error generating weekly trends: {e}")
+            return f"<p>Error generating weekly trends: {str(e)}</p>"
+    
+    def _get_location_availability(self, uid: str, current_date: datetime) -> List[int]:
+        """Get location availability for 30-minute windows."""
+        start_time = int(current_date.timestamp())
+        end_time = int((current_date + timedelta(days=1)).timestamp())
+        
+        location_available = []
+        start_window = start_time
+        
+        while start_window < end_time:
+            end_window = start_window + 1800  # 30 minutes
+            count = self.db[self.config.collections.IOS_LOCATION].count_documents({
+                'uid': uid,
+                'event_id': 152,
+                'timestamp': {'$gte': start_window, '$lt': end_window}
+            })
+            location_available.append(1 if count > 0 else 0)
+            start_window = end_window
+        
+        return location_available
+    
+    def _get_hr_data(self, uid: str, current_date: datetime) -> Tuple[List[float], List[datetime]]:
+        """Get heart rate data for the day."""
+        start_time = int(current_date.timestamp())
+        end_time = int((current_date + timedelta(days=1)).timestamp())
+        
+        hr_data = list(self.db[self.config.collections.GARMIN_HR].find({
+            'uid': uid,
+            'timestamp': {'$gte': start_time, '$lt': end_time}
+        }).sort('timestamp', 1))
+        
+        hr_values = []
+        hr_times = []
+        
+        for record in hr_data:
+            hr_values.append(float(record.get('heart_rate', 0)))
+            hr_times.append(datetime.fromtimestamp(record['timestamp']))
+        
+        return hr_values, hr_times
+    
+    def _get_stress_availability(self, uid: str, current_date: datetime) -> List[int]:
+        """Get stress availability for 30-minute windows."""
+        start_time = int(current_date.timestamp())
+        end_time = int((current_date + timedelta(days=1)).timestamp())
+        
+        stress_available = []
+        start_window = start_time
+        
+        while start_window < end_time:
+            end_window = start_window + 1800  # 30 minutes
+            count = self.db[self.config.collections.GARMIN_STRESS].count_documents({
+                'uid': uid,
+                'timestamp': {'$gte': start_window, '$lt': end_window}
+            })
+            stress_available.append(1 if count > 0 else 0)
+            start_window = end_window
+        
+        return stress_available
     
     def _generate_user_daily_summary(self, uid: str, start_timestamp: int, 
                                    end_timestamp: int, target_date: datetime.date):
