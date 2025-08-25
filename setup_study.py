@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Comprehensive setup script for study framework deployment.
+Comprehensive setup script for study framework deployment with submodule support.
 
 This script handles:
-1. Conda environment creation
-2. Package installation
-3. Systemd service creation
-4. Nginx configuration
-5. Directory structure setup
+1. Submodule validation and setup
+2. Conda environment creation
+3. Package installation
+4. Systemd service creation
+5. Nginx configuration
+6. Directory structure setup
+7. README generation with extension instructions
 """
 
 import os
@@ -19,6 +21,7 @@ from pathlib import Path
 from string import Template
 from typing import Dict, Any
 import json
+from datetime import datetime
 
 
 def run_command(command, check=True, capture_output=False):
@@ -37,6 +40,136 @@ def run_command(command, check=True, capture_output=False):
         if check:
             sys.exit(1)
         return False
+
+
+def check_submodule_setup():
+    """Check if submodule is properly set up."""
+    print("🔍 Checking submodule setup...")
+    
+    # Check if we're in the framework directory
+    if not Path("study_framework_core").exists():
+        print("❌ Error: study_framework_core not found!")
+        print("Please ensure you're running this script from the ubiwell-study-backend-core directory")
+        return False
+    
+    # Check if parent directory has .git (indicating it's a git repo)
+    parent_dir = Path("..")
+    if not (parent_dir / ".git").exists():
+        print("⚠️  Warning: Parent directory is not a git repository")
+        print("Consider initializing git in the parent directory for better version control")
+    
+    print("✅ Submodule setup validated")
+    return True
+
+
+def ensure_gitmodules():
+    """Create .gitmodules file if it doesn't exist."""
+    print("📝 Checking .gitmodules file...")
+    
+    gitmodules_path = Path("../.gitmodules")
+    if not gitmodules_path.exists():
+        print("📝 Creating .gitmodules file...")
+        gitmodules_content = """[submodule "ubiwell-study-backend-core"]
+    path = ubiwell-study-backend-core
+    url = https://github.com/your-org/ubiwell-study-backend-core.git
+    branch = main
+"""
+        gitmodules_path.write_text(gitmodules_content)
+        print("✅ Created .gitmodules file")
+    else:
+        print("✅ .gitmodules file already exists")
+
+
+def get_framework_version():
+    """Get the current framework version."""
+    try:
+        # Try to get git commit hash
+        commit_hash = run_command("git rev-parse --short HEAD", capture_output=True)
+        return f"commit {commit_hash}"
+    except:
+        return "unknown"
+
+
+def create_study_readme(study_name, study_dir):
+    """Create a README.md with extension instructions."""
+    print("📖 Creating README.md with extension instructions...")
+    
+    readme_content = f"""# {study_name}
+
+This study uses the Ubiwell Study Framework.
+
+## Setup
+- Framework: ubiwell-study-backend-core (submodule)
+- Created: {datetime.now().strftime('%Y-%m-%d')}
+- Framework version: {get_framework_version()}
+
+## Structure
+- `ubiwell-study-backend-core/` - Framework code
+- `config/` - Study configuration
+- `data/` - Study data
+- `logs/` - Application logs
+- `scripts/` - Study-specific scripts
+
+## Extending the Study
+
+### Adding Custom Data Processing
+1. Create custom scripts in `scripts/` directory
+2. Import framework components:
+   ```python
+   from study_framework_core.core.handlers import get_db
+   from study_framework_core.core.config import get_config
+   ```
+
+### Adding Custom API Endpoints
+1. Extend the core API in your own module
+2. Import base classes:
+   ```python
+   from study_framework_core.core.api import APIBase, CoreAPIEndpoints
+   ```
+
+### Adding Custom Dashboard Views
+1. Create custom dashboard classes
+2. Extend the base dashboard:
+   ```python
+   from study_framework_core.core.dashboard import DashboardBase
+   ```
+
+### Adding Custom Data Types
+1. Add new collections to `config.py`
+2. Create processing scripts for new data types
+3. Update dashboard to display new data
+
+### Configuration
+- Study-specific config: `config/study_config.json`
+- Framework config: `ubiwell-study-backend-core/study_framework_core/core/config.py`
+
+## Updates
+To update the framework:
+```bash
+cd ubiwell-study-backend-core
+git submodule update --remote
+python update_core.py
+```
+
+## Development
+- Framework code: `ubiwell-study-backend-core/`
+- Study-specific code: `scripts/`, `config/`
+- Templates: `templates/` (extends framework templates)
+
+## Services
+- API Service: `{study_name.lower().replace(' ', '-')}-api`
+- Internal Web Service: `{study_name.lower().replace(' ', '-')}-internal`
+
+## Access URLs
+- API: https://your-domain.com/{study_name.lower().replace(' ', '_')}/api/v1/
+- Dashboard: https://your-domain.com/{study_name.lower().replace(' ', '_')}/internal_web
+- API Health: https://your-domain.com/{study_name.lower().replace(' ', '_')}/api/health
+- Internal Health: https://your-domain.com/{study_name.lower().replace(' ', '_')}/internal/health
+"""
+    
+    readme_path = Path("../README.md")
+    readme_path.write_text(readme_content)
+    print("✅ Created README.md with extension instructions")
 
 
 def check_anaconda():
@@ -685,7 +818,7 @@ def main():
     parser = argparse.ArgumentParser(description='Setup a new study with conda, systemd, and nginx')
     parser.add_argument('study_name', help='Name of the study')
     parser.add_argument('--user', default='connect', help='System user to run the service')
-    parser.add_argument('--base-dir', default='/mnt/study', help='Base directory for studies')
+    parser.add_argument('--study-path', help='Path to study directory (auto-detected if not specified)')
     parser.add_argument('--python-version', default='3.9', help='Python version for conda environment')
     parser.add_argument('--tokens', nargs='+', help='Authentication tokens')
     parser.add_argument('--db-username', help='MongoDB username')
@@ -704,9 +837,14 @@ def main():
         update_core_framework(args.study_name)
         return
     
+    # Auto-detect study path if not specified
+    if not args.study_path:
+        args.study_path = str(Path.cwd().parent)
+        print(f"🔍 Auto-detected study directory: {args.study_path}")
+    
     print(f"🚀 Setting up study: {args.study_name}")
     print(f"👤 User: {args.user}")
-    print(f"📁 Base directory: {args.base_dir}")
+    print(f"📁 Study directory: {args.study_path}")
     
     # Check if running as root
     if os.geteuid() != 0:
@@ -716,17 +854,22 @@ def main():
     # Check Anaconda installation
     conda_path = check_anaconda()
     
+    # Check submodule setup
+    if not check_submodule_setup():
+        sys.exit(1)
+    ensure_gitmodules()
+
     # Create conda environment
     env_name = create_conda_environment(args.study_name, args.python_version)
     
     # Create directory structure
-    study_dir = create_directory_structure(args.study_name, args.base_dir, args.user)
+    study_dir = create_directory_structure(args.study_name, args.study_path, args.user)
     
     # Install packages
     install_packages(env_name, Path.cwd())
     
     # Create systemd services
-    api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.base_dir)
+    api_service_name, internal_service_name = create_systemd_service(args.study_name, env_name, study_dir, args.user, args.study_path)
     
     # Create nginx configuration
     nginx_file = create_nginx_config(args.study_name, api_service_name, internal_service_name)
@@ -763,7 +906,9 @@ def main():
         args.db_name
     )
     requirements_file = create_requirements_file(study_dir)
-    readme_file = create_readme(study_dir, args.study_name, service_name)
+    
+    # Create README with extension instructions
+    create_study_readme(args.study_name, study_dir)
     
     # Set proper ownership
     run_command(f"chown -R {args.user}:{args.user} {study_dir}")

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Smart script to update the core framework to the latest version.
+Smart script to update the core framework to the latest version with submodule support.
 
 Usage:
-    # Update from within a study directory
+    # Update from within the submodule directory
     python update_core.py
     
     # Update a specific study by name
@@ -34,25 +34,25 @@ def run_command(command, check=True):
         return False
 
 
-def find_study_directory(study_name=None, base_dir="/mnt/study"):
+def find_study_directory(study_name=None, base_dir=None):
     """Find the study directory by name or current location."""
+    # Auto-detect base directory if not provided
+    if not base_dir:
+        base_dir = str(Path.cwd().parent)
+    
     if study_name:
         # Look for study by name in base directory
         study_path = Path(base_dir) / study_name.lower().replace(' ', '-')
         if study_path.exists():
             return study_path
     
-    # Try to find study from current directory
-    current_path = Path.cwd()
+    # Try to find study from current directory (we're in the submodule)
+    # The study directory is the parent of the current directory
+    study_path = Path.cwd().parent
     
-    # Check if we're in a study directory (has study_config.json)
-    if (current_path / "study_config.json").exists():
-        return current_path
-    
-    # Check if we're in a subdirectory of a study
-    for parent in current_path.parents:
-        if (parent / "study_config.json").exists():
-            return parent
+    # Verify it's actually a study directory
+    if (study_path / "study_config.json").exists() or (study_path / "api_wsgi.py").exists():
+        return study_path
     
     # If study_name provided, try common locations
     if study_name:
@@ -60,9 +60,6 @@ def find_study_directory(study_name=None, base_dir="/mnt/study"):
             Path(base_dir) / study_name.lower().replace(' ', '-'),
             Path(base_dir) / study_name.replace(' ', '-'),
             Path(base_dir) / study_name,
-            Path("/tmp") / study_name.lower().replace(' ', '-'),
-            Path("/tmp") / study_name.replace(' ', '-'),
-            Path("/tmp") / study_name,
         ]
         
         for path in common_paths:
@@ -97,65 +94,24 @@ def get_conda_path(study_path):
     return "conda"  # Fallback to conda in PATH
 
 
-def copy_core_framework(study_dir: Path, user: str):
-    """Copy the core framework package to the study directory."""
-    try:
-        # Get the path to the core framework
-        core_framework_dir = Path.cwd() / "study_framework_core"
-        study_core_dir = study_dir / "study_framework_core"
-        
-        if core_framework_dir.exists():
-            print(f"📦 Copying core framework to {study_core_dir}")
-            
-            # Remove existing core framework directory
-            if study_core_dir.exists():
-                shutil.rmtree(study_core_dir)
-            
-            # Copy the entire study_framework_core directory
-            shutil.copytree(core_framework_dir, study_core_dir, dirs_exist_ok=True)
-            
-            # Make sure the package is properly set up
-            init_file = study_core_dir / "__init__.py"
-            if not init_file.exists():
-                init_file.touch()
-            
-            # Set ownership to the study user
-            run_command(f"chown -R {user}:{user} {study_core_dir}")
-            
-            print(f"✅ Core framework copied successfully")
-        else:
-            print(f"❌ Error: Core framework directory not found: {core_framework_dir}")
-            
-    except Exception as e:
-        print(f"❌ Error copying core framework: {e}")
-        raise
-
-
-def copy_test_files(study_dir: Path, user: str):
-    """Copy test files to the study directory."""
-    try:
-        # Copy test files from the core framework repository
-        test_files = [
-            "test_pipeline_step_by_step.py",
-            "upload_test_data.py"
-        ]
-        
-        for test_file in test_files:
-            source_file = Path.cwd() / test_file
-            dest_file = study_dir / test_file
-            
-            if source_file.exists():
-                shutil.copy2(source_file, dest_file)
-                run_command(f"chown {user}:{user} {dest_file}")
-                print(f"✅ Copied test file: {test_file}")
-            else:
-                print(f"⚠️  Warning: Test file not found: {test_file}")
-                
-    except Exception as e:
-        print(f"⚠️  Warning: Could not copy test files: {e}")
-
-
-
+def check_submodule_setup():
+    """Check if we're in a properly set up submodule."""
+    print("🔍 Checking submodule setup...")
+    
+    # Check if we're in the framework directory
+    if not Path("study_framework_core").exists():
+        print("❌ Error: study_framework_core not found!")
+        print("Please ensure you're running this script from the ubiwell-study-backend-core directory")
+        return False
+    
+    # Check if parent directory has .git (indicating it's a git repo)
+    parent_dir = Path("..")
+    if not (parent_dir / ".git").exists():
+        print("⚠️  Warning: Parent directory is not a git repository")
+        print("Consider initializing git in the parent directory for better version control")
+    
+    print("✅ Submodule setup validated")
+    return True
 
 
 def get_env_name(study_path):
@@ -181,19 +137,17 @@ def update_core_framework(study_path, study_name=None):
     print(f"📦 Conda path: {conda_path}")
     print()
     
-    # Check if we're in the right directory (should be the core framework repo)
-    if not (Path.cwd() / "study_framework_core").exists():
-        print("❌ Error: This script should be run from the core framework repository!")
-        print("💡 Please run from: /path/to/ubiwell-study-backend-core")
+    # Check submodule setup
+    if not check_submodule_setup():
         sys.exit(1)
     
     # Pull latest changes from Git
     print("📥 Pulling latest changes from Git...")
     run_command("git pull origin main")
     
-    # Update the core package in the study's environment (copy files, not editable)
+    # Update the core package in the study's environment
     print("📦 Updating core package...")
-    update_command = f"{conda_path} run -n {env_name} pip install --upgrade {Path.cwd()}/study_framework_core/"
+    update_command = f"{conda_path} run -n {env_name} pip install --upgrade -e ."
     run_command(update_command)
     
     # Install/update requirements to ensure all dependencies are available
@@ -204,16 +158,6 @@ def update_core_framework(study_path, study_name=None):
         run_command(install_command)
     else:
         print("⚠️  Warning: requirements.txt not found in core framework")
-    
-    # Copy updated core framework files to study directory
-    print("📁 Copying updated core framework files...")
-    copy_core_framework(study_path, study_path.name)
-    
-    # Copy test files to study directory
-    print("🧪 Copying test files...")
-    copy_test_files(study_path, study_path.name)
-    
-
     
     print("✅ Core framework updated successfully!")
     print()
@@ -229,18 +173,22 @@ def update_core_framework(study_path, study_name=None):
     print("💡 Test the update:")
     print(f"   cd {study_path}")
     print(f"   {conda_path} run -n {env_name} python -c \"from study_framework_core.core.config import get_config; print('✅ Update successful!')\"")
+    print()
+    print("💡 To update the submodule in the parent repository:")
+    print(f"   cd {study_path}")
+    print(f"   git add ubiwell-study-backend-core")
+    print(f"   git commit -m 'Updated framework to latest version'")
 
 
 def main():
     parser = argparse.ArgumentParser(description='Update core framework to latest version')
     parser.add_argument('--study-name', help='Name of the study to update')
-    parser.add_argument('--study-path', help='Path to the study directory')
-    parser.add_argument('--base-dir', default='/mnt/study', help='Base directory for studies (default: /mnt/study)')
+    parser.add_argument('--study-path', help='Path to the study directory (auto-detected if not specified)')
     
     args = parser.parse_args()
     
-    print("Core Framework Update")
-    print("=" * 30)
+    print("Core Framework Update (Submodule Version)")
+    print("=" * 40)
     
     # Find study directory
     if args.study_path:
@@ -249,7 +197,17 @@ def main():
             print(f"❌ Study path does not exist: {args.study_path}")
             sys.exit(1)
     else:
-        study_path = find_study_directory(args.study_name, args.base_dir)
+        # Auto-detect study directory (parent of current submodule directory)
+        study_path = find_study_directory(args.study_name)
+        if not study_path:
+            print("❌ Could not find study directory!")
+            print("💡 Options:")
+            print("   1. Run from within the submodule directory")
+            print("   2. Use --study-path to specify the exact path")
+            print("   3. Use --study-name to search by name")
+            sys.exit(1)
+    
+    print(f"🔍 Auto-detected study directory: {study_path}")
     
     if not study_path:
         print("❌ Could not find study directory!")
