@@ -1142,7 +1142,7 @@ def main():
         print("✅ Admin user created successfully")
     else:
         print("⚠️  Admin user creation failed - you can create it manually later")
-        print("   Run: cd /mnt/study/bean-study && python create_admin_user.py")
+        print("   Run: cd /mnt/study/bean-study && python ubiwell-study-backend-core/tests/create_admin_user.py")
     requirements_file = create_requirements_file(study_dir)
     
     # Create README with extension instructions

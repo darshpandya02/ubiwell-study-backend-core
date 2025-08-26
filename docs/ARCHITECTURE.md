@@ -1,4 +1,6 @@
-# Study Framework: Modular Architecture for Data Collection Studies
+# Architecture Guide
+
+This document provides a comprehensive overview of the Study Framework Core architecture.
 
 ## Problem Statement
 
@@ -103,10 +105,6 @@ class ConnectStudyAPI(APIBase):
         self.api.add_resource(RequestEmaFile, '/data/ema-request')
         self.api.add_resource(UploadDailyDiary, '/data/daily-diary')
         self.api.add_resource(UploadEma, '/data/ema-response')
-        
-        # Connect Study specific endpoints (to be removed in future)
-        self.api.add_resource(TestCentralServer, '/check/test-central')
-        self.api.add_resource(CentralServer, '/check/central-server')
 ```
 
 ### 3. Data Processing Framework
@@ -282,23 +280,23 @@ pip install --upgrade study-framework-core
 
 ## Implementation Roadmap
 
-### Phase 1: Core Framework Development
+### Phase 1: Core Framework Development ✅
 - [x] Design base classes and interfaces
 - [x] Create core templates and static files
 - [x] Implement basic dashboard functionality
 - [x] Create deployment scripts
 
-### Phase 2: Migration
-- [ ] Migrate Connect Study to new framework
-- [ ] Test all functionality
-- [ ] Update documentation
-- [ ] Create migration guide
+### Phase 2: Migration ✅
+- [x] Migrate Connect Study to new framework
+- [x] Test all functionality
+- [x] Update documentation
+- [x] Create migration guide
 
-### Phase 3: Deployment
-- [ ] Deploy core framework to package repository
-- [ ] Set up automated testing
-- [ ] Create study templates
-- [ ] Train team on new framework
+### Phase 3: Deployment ✅
+- [x] Deploy core framework to package repository
+- [x] Set up automated testing
+- [x] Create study templates
+- [x] Train team on new framework
 
 ### Phase 4: Enhancement
 - [ ] Add more core features
@@ -317,3 +315,8 @@ The modular study framework solves the original problem by:
 5. **Improving Maintainability**: Clear separation of concerns
 
 This architecture provides a sustainable foundation for managing multiple data collection studies while maintaining flexibility for study-specific requirements.
+
+---
+
+**For extension examples, see [EXTENSION_GUIDE.md](EXTENSION_GUIDE.md).**
+**For setup instructions, see [SETUP_GUIDE.md](../SETUP_GUIDE.md).**

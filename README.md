@@ -76,12 +76,27 @@ python update_core.py --study-name "My Study"
 ## 📁 Repository Structure
 
 ```
-study-framework-core/
-├── study_framework_core/          # Core package
+ubiwell-study-backend-core/
+├── study_framework_core/          # Core framework package
 │   ├── core/                     # Core classes and interfaces
-│   ├── templates/                # Core templates
-│   ├── static/                   # Core static files
+│   ├── templates/                # Core HTML templates
+│   ├── static/                   # Core CSS and JavaScript
 │   └── scripts/                  # Processing scripts
+├── docs/                         # Documentation
+│   ├── README.md                # Documentation index
+│   ├── EXTENSION_GUIDE.md       # How to extend the framework
+│   ├── ARCHITECTURE.md          # Framework architecture
+│   └── API_REFERENCE.md         # Complete API reference
+├── tests/                        # Testing utilities
+│   ├── README.md                # Testing guide
+│   ├── test_api_endpoints.py    # API testing script
+│   ├── API_TEST_GUIDE.md        # API testing guide
+│   ├── upload_test_data.py      # Test data upload script
+│   ├── test_pipeline_step_by_step.py  # Pipeline testing
+│   ├── test-files.zip           # Test data archive
+│   ├── install_requirements.py  # Requirements installation
+│   ├── create_admin_user.py     # Admin user creation
+│   └── fix_wsgi_files.py        # WSGI file fixes
 ├── setup_study.py                # Automated setup script
 ├── update_core.py                # Update script
 ├── requirements.txt              # Dependencies
@@ -153,9 +168,11 @@ class MyStudyDataProcessor(DataProcessor):
 
 ## 📖 Documentation
 
-- **[Complete Setup Guide](SETUP_GUIDE.md)**: Step-by-step setup instructions
-- **[Developer Guide](study_framework_core/README.md)**: Framework development and extension
-- **[Framework Summary](FRAMEWORK_SUMMARY.md)**: Architecture overview
+- **[Setup Guide](SETUP_GUIDE.md)**: Complete setup instructions
+- **[Extension Guide](docs/EXTENSION_GUIDE.md)**: How to extend the framework
+- **[Architecture Guide](docs/ARCHITECTURE.md)**: Framework architecture overview
+- **[API Reference](docs/API_REFERENCE.md)**: Complete API documentation
+- **[Documentation Index](docs/README.md)**: All documentation organized by topic
 
 ## 🛠️ Requirements
 
@@ -178,5 +195,5 @@ For setup help, see the [troubleshooting section](SETUP_GUIDE.md#troubleshooting
 
 ---
 
-**Ready to build your data collection study?** Start with the [Complete Setup Guide](SETUP_GUIDE.md)! 🚀
+**Ready to build your data collection study?** Start with the [Setup Guide](SETUP_GUIDE.md)! 🚀
 

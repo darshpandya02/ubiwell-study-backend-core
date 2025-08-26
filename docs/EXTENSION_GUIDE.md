@@ -1,37 +1,94 @@
-# Study Framework Core - Developer Documentation
+# Extension Guide
 
-This directory contains the core framework package for data collection studies. This documentation is for developers who want to understand, extend, or contribute to the framework.
+This guide explains how to extend the Study Framework Core for your specific study needs.
 
-## 📦 Package Structure
+## 🎨 Extending the Framework
 
+### **Adding Custom Dashboard Columns**
+
+1. **Extend DashboardBase:**
+```python
+from study_framework_core import DashboardBase
+
+class MyStudyDashboard(DashboardBase):
+    def get_custom_columns(self):
+        return ["EMA Responses", "App Events"]
+    
+    def generate_custom_row_data(self, user_data, daily_summary):
+        return {
+            "ema_responses": self._get_ema_count(user_data),
+            "app_events": self._get_app_event_count(user_data)
+        }
 ```
-study_framework_core/
-├── __init__.py                 # Package exports
-├── core/                       # Core framework classes
-│   ├── __init__.py
-│   ├── config.py              # Configuration management
-│   ├── dashboard.py           # Dashboard base classes
-│   ├── api.py                 # API base classes
-│   ├── processing.py          # Data processing base classes
-│   ├── internal_web.py        # Internal web interface
-│   ├── handlers.py            # Common helper functions
-│   ├── schemas.py             # API request schemas
-│   └── processing_scripts.py  # Backend processing logic
-├── templates/                  # Core HTML templates
-│   ├── dashboard_base.html
-│   ├── navigation.html
-│   ├── login.html
-│   ├── landing_page.html
-│   └── user_management.html
-├── static/                     # Core static files
-│   ├── css/
-│   │   └── core_styles.css
-│   └── js/
-│       └── core_dashboard.js
-└── scripts/                    # Processing scripts
-    ├── process_data.sh
-    ├── generate_summaries.sh
-    └── setup_cron_jobs.sh
+
+2. **Use in your WSGI file:**
+```python
+# wsgi_internal.py
+from study_framework_core import InternalWebBase
+from my_study_implementation.dashboard import MyStudyDashboard
+
+internal_app = InternalWebBase(dashboard_class=MyStudyDashboard)
+application = internal_app
+```
+
+### **Adding Custom API Endpoints**
+
+1. **Create custom endpoints:**
+```python
+from flask_restful import Resource
+
+class CustomDataEndpoint(Resource):
+    def get(self):
+        return {"custom_data": "value"}
+    
+    def post(self):
+        # Handle custom data upload
+        pass
+```
+
+2. **Extend APIBase:**
+```python
+from study_framework_core import APIBase
+
+class MyStudyAPI(APIBase):
+    def get_custom_endpoints(self):
+        return [CustomDataEndpoint]
+```
+
+3. **Use in your WSGI file:**
+```python
+# wsgi_api.py
+from my_study_implementation.api import MyStudyAPI
+api_app = MyStudyAPI()
+application = api_app
+```
+
+### **Adding Custom Data Processing**
+
+1. **Extend DataProcessor:**
+```python
+from study_framework_core.core.processing_scripts import DataProcessor
+
+class MyStudyDataProcessor(DataProcessor):
+    def process_phone_data(self, user_id):
+        # Call core processing
+        super().process_phone_data(user_id)
+        
+        # Add custom processing
+        self._process_custom_data(user_id)
+    
+    def _process_custom_data(self, user_id):
+        # Process study-specific data
+        pass
+```
+
+2. **Use in your processing scripts:**
+```python
+# my_study_processing.py
+from my_study_implementation.processing import MyStudyDataProcessor
+
+processor = MyStudyDataProcessor()
+processor.process_phone_data("user123")
 ```
 
 ## 🔧 Core Classes
@@ -89,89 +146,6 @@ class MyStudyDataProcessor(DataProcessor):
     def _process_custom_data(self, user_id):
         # Your custom processing logic
         pass
-```
-
-## 🎨 Extending the Framework
-
-### **Adding Custom Dashboard Columns**
-
-1. **Extend DashboardBase:**
-```python
-class MyStudyDashboard(DashboardBase):
-    def get_custom_columns(self):
-        return ["EMA Responses", "App Events"]
-    
-    def generate_custom_row_data(self, user_data, daily_summary):
-        return {
-            "ema_responses": self._get_ema_count(user_data),
-            "app_events": self._get_app_event_count(user_data)
-        }
-```
-
-2. **Use in your WSGI file:**
-```python
-# wsgi_internal.py
-from study_framework_core import InternalWebBase
-from my_study_implementation.dashboard import MyStudyDashboard
-
-internal_app = InternalWebBase(dashboard_class=MyStudyDashboard)
-application = internal_app
-```
-
-### **Adding Custom API Endpoints**
-
-1. **Create custom endpoints:**
-```python
-from flask_restful import Resource
-
-class CustomDataEndpoint(Resource):
-    def get(self):
-        return {"custom_data": "value"}
-    
-    def post(self):
-        # Handle custom data upload
-        pass
-```
-
-2. **Extend APIBase:**
-```python
-class MyStudyAPI(APIBase):
-    def get_custom_endpoints(self):
-        return [CustomDataEndpoint]
-```
-
-3. **Use in your WSGI file:**
-```python
-# wsgi_api.py
-from my_study_implementation.api import MyStudyAPI
-api_app = MyStudyAPI()
-application = api_app
-```
-
-### **Adding Custom Data Processing**
-
-1. **Extend DataProcessor:**
-```python
-class MyStudyDataProcessor(DataProcessor):
-    def process_phone_data(self, user_id):
-        # Call core processing
-        super().process_phone_data(user_id)
-        
-        # Add custom processing
-        self._process_custom_data(user_id)
-    
-    def _process_custom_data(self, user_id):
-        # Process study-specific data
-        pass
-```
-
-2. **Use in your processing scripts:**
-```python
-# my_study_processing.py
-from my_study_implementation.processing import MyStudyDataProcessor
-
-processor = MyStudyDataProcessor()
-processor.process_phone_data("user123")
 ```
 
 ## ⚙️ Configuration
@@ -264,25 +238,6 @@ class TestMyStudyAPI(unittest.TestCase):
         self.assertTrue(len(endpoints) > 0)
 ```
 
-## 📚 API Reference
-
-### **Core Functions**
-- `get_config()`: Get configuration instance
-- `get_db()`: Get database connection
-- `get_db_client()`: Get MongoDB client
-- `current_milli_time()`: Get current timestamp
-
-### **Helper Functions**
-- `allowed_file(filename)`: Check if file type is allowed
-- `save_file(file, path)`: Save uploaded file
-- `login_check(token)`: Verify user login
-- `create_user(uid, password)`: Create new user
-
-### **Processing Functions**
-- `process_all_data()`: Process all uploaded data
-- `generate_all_summaries()`: Generate daily summaries
-- `process_garmin_files()`: Process Garmin FIT files
-
 ## 🐛 Debugging
 
 ### **Common Issues**
@@ -309,27 +264,39 @@ db = get_db()
 print(db.list_collection_names())  # Should print collections
 ```
 
-## 🤝 Contributing
+## 📦 Package Structure
 
-1. **Fork the repository**
-2. **Create a feature branch**
-3. **Make your changes**
-4. **Add tests**
-5. **Submit a pull request**
-
-### **Development Setup**
-```bash
-# Clone repository
-git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
-cd ubiwell-study-backend-core
-
-# Install in development mode
-pip install -e .
-
-# Run tests
-python -m pytest tests/
+```
+study_framework_core/
+├── __init__.py                 # Package exports
+├── core/                       # Core framework classes
+│   ├── __init__.py
+│   ├── config.py              # Configuration management
+│   ├── dashboard.py           # Dashboard base classes
+│   ├── api.py                 # API base classes
+│   ├── processing.py          # Data processing base classes
+│   ├── internal_web.py        # Internal web interface
+│   ├── handlers.py            # Common helper functions
+│   ├── schemas.py             # API request schemas
+│   └── processing_scripts.py  # Backend processing logic
+├── templates/                  # Core HTML templates
+│   ├── dashboard_base.html
+│   ├── navigation.html
+│   ├── login.html
+│   ├── landing_page.html
+│   └── user_management.html
+├── static/                     # Core static files
+│   ├── css/
+│   │   └── core_styles.css
+│   └── js/
+│       └── core_dashboard.js
+└── scripts/                    # Processing scripts
+    ├── process_data.sh
+    ├── generate_summaries.sh
+    └── setup_cron_jobs.sh
 ```
 
 ---
 
-**For setup instructions, see the main [README.md](../README.md) and [SETUP_GUIDE.md](../SETUP_GUIDE.md).**
+**For setup instructions, see [SETUP_GUIDE.md](../SETUP_GUIDE.md).**
+**For API reference, see [API_REFERENCE.md](API_REFERENCE.md).**
