@@ -1,6 +1,6 @@
 # Study Framework Core - Complete Setup Guide
 
-This guide covers everything you need to set up and use the Study Framework Core for your data collection studies.
+This guide covers everything you need to set up and use the Study Framework Core for your data collection studies using the **Git submodule** approach.
 
 ## 📋 Table of Contents
 
@@ -12,16 +12,31 @@ This guide covers everything you need to set up and use the Study Framework Core
 
 ## 🚀 Quick Start
 
-### For Developers (Just the Package)
+### **For Study Projects (Submodule Setup)**
 ```bash
-pip install git+https://github.com/UbiWell/ubiwell-study-backend-core.git
+# In your study project directory
+git submodule add https://github.com/UbiWell/ubiwell-study-backend-core.git
+git submodule update --init --recursive
+
+# Run setup script
+cd ubiwell-study-backend-core
+sudo python setup_study.py "My Study" \
+    --user myuser \
+    --db-username mydbuser \
+    --db-password mydbpass \
+    --db-name my_study_db \
+    --auth-key my-auth-key \
+    --announcement-key my-announcement-key
 ```
 
-### For Complete Study Setup
+### **For Framework Development**
 ```bash
+# Clone framework for development
 git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
 cd ubiwell-study-backend-core
-python setup_study.py "My Study" --user myuser
+
+# Install in development mode
+pip install -e .
 ```
 
 ## 📦 Complete Setup
@@ -30,27 +45,43 @@ python setup_study.py "My Study" --user myuser
 - Ubuntu/Debian server
 - Root access (sudo)
 - MongoDB installed and running
-- **Note**: Anaconda will be installed automatically at `{base-dir}/anaconda3` if not present
+- **Note**: Anaconda will be installed automatically if not present
 
 ### Workflow Overview
 The setup process follows this workflow:
-1. **Clone framework temporarily** to `/tmp/study-framework`
-2. **Run setup script** which creates study at `{base-dir}/{study-name}/`
-3. **Install Anaconda** at `{base-dir}/anaconda3/` if needed
-4. **Create conda environment** for the study
+1. **Create study project** and initialize Git repository
+2. **Add framework as submodule** to your study project
+3. **Run setup script** which creates the complete study infrastructure
+4. **Install Anaconda** automatically if needed
 5. **Setup systemd services** and Nginx configuration
-6. **Clean up** temporary framework files
+6. **Configure and start** all services
 
-### Step 1: Clone and Setup
+### Step 1: Create Study Project
 ```bash
-# Clone the framework temporarily
-git clone https://github.com/UbiWell/ubiwell-study-backend-core.git /tmp/study-framework
-cd /tmp/study-framework
+# Create your study project directory
+mkdir my-study
+cd my-study
+
+# Initialize Git repository
+git init
+
+# Add framework as submodule
+git submodule add https://github.com/UbiWell/ubiwell-study-backend-core.git
+git submodule update --init --recursive
+
+# Commit the submodule addition
+git add .
+git commit -m "Add Study Framework Core as submodule"
+```
+
+### Step 2: Run Setup Script
+```bash
+# Navigate to the framework directory
+cd ubiwell-study-backend-core
 
 # Run setup (as root) - Anaconda will be installed automatically if needed
 sudo python setup_study.py "My Study" \
     --user myuser \
-    --base-dir /mnt/study \
     --db-username mydbuser \
     --db-password mydbpass \
     --db-host localhost \
@@ -58,30 +89,30 @@ sudo python setup_study.py "My Study" \
     --db-name my_study_db \
     --auth-key my-auth-key \
     --announcement-key my-announcement-key
-
-# Clean up framework files (optional)
-rm -rf /tmp/study-framework
 ```
 
-**Base Directory Options:**
-- `--base-dir /mnt/study` (default) - Standard location
-- `--base-dir /opt/studies` - Alternative location
-- `--base-dir /home/myuser/studies` - User-specific location
+**Setup Script Options:**
+- `--user myuser` - System user for the study
+- `--db-username mydbuser` - MongoDB username
+- `--db-password mydbpass` - MongoDB password
+- `--db-name my_study_db` - MongoDB database name
+- `--auth-key my-auth-key` - API authentication key
+- `--announcement-key my-announcement-key` - Announcement system key
 
-**Note**: The framework is cloned temporarily and cleaned up after setup. The study data and Anaconda installation remain in the specified base directory. The framework package is installed from the `study_framework_core/` subdirectory.
+**Note**: The setup script automatically:
+- Detects and installs Anaconda if needed
+- Creates conda environment for your study
+- Sets up all systemd services
+- Configures Nginx
+- Creates admin user for internal web access
 
-### Step 2: Configure
+### Step 3: Configure Study
 Edit the generated config file:
 ```bash
-nano /mnt/study/my-study/study_config.json
+nano /mnt/study/my-study/config/study_config.json
 ```
 
-**Note**: If Anaconda was installed automatically, it will be located at `{base-dir}/anaconda3/`. The setup script automatically:
-- Downloads and installs Anaconda 2023.09
-- Adds it to the system PATH via `/etc/profile.d/conda.sh`
-- Creates conda environments for your studies
-
-### Step 3: Start Services
+### Step 4: Start Services
 ```bash
 # Start API service (Priority #1 - Data Collection)
 sudo systemctl start my-study-api
@@ -91,24 +122,27 @@ sudo systemctl start my-study-internal
 
 # Check status
 sudo systemctl status my-study-api my-study-internal
+
+# Enable services to start on boot
+sudo systemctl enable my-study-api my-study-internal
 ```
 
-### Step 4: Setup Cron Jobs
+### Step 5: Setup Cron Jobs
 ```bash
 # Setup automated data processing
 sudo /mnt/study/my-study/scripts/setup_cron_jobs.sh --user myuser --env my-study-env
 ```
 
-### Step 5: Access Your Study
-- **API Endpoints**: `http://your-server.com/api/v1/`
-- **Internal Dashboard**: `http://your-server.com/internal_web/`
+### Step 6: Access Your Study
+- **API Endpoints**: `https://your-server.com/api/v1/`
+- **Internal Dashboard**: `https://your-server.com/internal_web/`
 - **Admin Login**: Username: `admin`, Password: (generated during setup)
 
 ## 🎨 Customization
 
 ### Adding Custom Dashboard Columns
 
-Create your custom dashboard implementation:
+Create your custom dashboard implementation in your study project:
 
 ```python
 # my_study_implementation/dashboard.py
@@ -165,15 +199,15 @@ class MyStudyDataProcessor(DataProcessor):
 
 ### Using Custom Implementations
 
-Update your WSGI files:
+Update your WSGI files to use custom implementations:
 
 ```python
-# wsgi_api.py
+# api_wsgi.py (customized)
 from my_study_implementation.api import MyStudyAPI
 api_app = MyStudyAPI()
 application = api_app
 
-# wsgi_internal.py
+# internal_wsgi.py (customized)
 from study_framework_core import InternalWebBase
 from my_study_implementation.dashboard import MyStudyDashboard
 
@@ -185,16 +219,23 @@ application = internal_app
 
 ### Updating Core Framework
 ```bash
-# Option 1: Using update script
+# Navigate to your study project
+cd /path/to/my-study
+
+# Update the submodule to latest version
+cd ubiwell-study-backend-core
+git submodule update --remote
+
+# Update the framework
 python update_core.py --study-name "My Study"
 
-# Option 2: Using setup script
-python setup_study.py "My Study" --update
-
-# Option 3: Manual update
-git pull origin main
-conda run -n my-study-env pip install --upgrade -e .
+# Restart services
 sudo systemctl restart my-study-api my-study-internal
+
+# Commit the update
+cd ..
+git add ubiwell-study-backend-core
+git commit -m "Update framework to latest version"
 ```
 
 ### What Gets Updated
@@ -202,6 +243,7 @@ sudo systemctl restart my-study-api my-study-internal
 - ✅ Bug fixes and improvements
 - ✅ Security updates
 - ❌ Your custom code (stays intact)
+- ❌ Your study configuration (stays intact)
 
 ## 🛠️ Troubleshooting
 
@@ -215,6 +257,10 @@ sudo journalctl -u my-study-internal -f
 
 # Check permissions
 sudo chown -R myuser:myuser /mnt/study/my-study/
+
+# Fix WSGI files if needed
+cd /mnt/study/my-study
+python ubiwell-study-backend-core/tests/fix_wsgi_files.py
 ```
 
 #### 2. Database Connection Failed
@@ -223,6 +269,8 @@ sudo chown -R myuser:myuser /mnt/study/my-study/
 sudo systemctl status mongod
 
 # Test connection
+cd /mnt/study/my-study
+conda activate my-study-env
 python -c "from study_framework_core.core.handlers import get_db; print(get_db())"
 ```
 
@@ -244,16 +292,24 @@ sudo tail -f /var/log/nginx/error.log
 conda activate my-study-env
 
 # Reinstall packages
-pip install -r requirements.txt
+cd /mnt/study/my-study
+python ubiwell-study-backend-core/tests/install_requirements.py
+```
+
+#### 5. Admin User Issues
+```bash
+# Create admin user manually
+cd /mnt/study/my-study
+python ubiwell-study-backend-core/tests/create_admin_user.py
 ```
 
 ### Health Checks
 ```bash
 # API health
-curl http://your-server.com/api/health
+curl https://your-server.com/api/v1/health
 
 # Internal web health
-curl http://your-server.com/internal/health
+curl https://your-server.com/internal_web/health
 ```
 
 ## 📁 Directory Structure
@@ -262,16 +318,22 @@ After setup, your study directory will look like:
 
 ```
 /mnt/study/my-study/
-├── study_framework_core/          # Core framework
+├── ubiwell-study-backend-core/    # Framework submodule
+│   ├── study_framework_core/      # Core framework package
+│   ├── docs/                      # Documentation
+│   ├── tests/                     # Testing utilities
+│   ├── setup_study.py             # Setup script
+│   └── update_core.py             # Update script
 ├── my_study_implementation/       # Your custom code (optional)
 ├── templates/                     # Custom templates (optional)
 ├── static/                        # Custom static files (optional)
 ├── scripts/                       # Processing scripts
 ├── logs/                          # Application logs
 ├── data/                          # Data directories
-├── study_config.json              # Configuration
-├── wsgi_api.py                    # API WSGI
-├── wsgi_internal.py               # Internal WSGI
+├── config/                        # Configuration files
+│   └── study_config.json          # Main configuration
+├── api_wsgi.py                    # API WSGI
+├── internal_wsgi.py               # Internal WSGI
 └── README.md                      # Study-specific docs
 ```
 
@@ -294,8 +356,8 @@ After setup, your study directory will look like:
 ```json
 {
   "paths": {
-    "data_upload_path": "/mnt/study/my-study/data/uploads",
-    "data_processed_path": "/mnt/study/my-study/data/processed",
+    "data_upload_path": "/mnt/study/my-study/data_uploads/uploads",
+    "data_processed_path": "/mnt/study/my-study/data_uploads/processed",
     "ema_file_path": "/mnt/study/my-study/ema_surveys"
   }
 }
@@ -311,13 +373,32 @@ After setup, your study directory will look like:
 }
 ```
 
+## 🧪 Testing
+
+### API Testing
+```bash
+# Test all API endpoints
+cd /mnt/study/my-study
+python ubiwell-study-backend-core/tests/test_api_endpoints.py --server https://your-server.com
+```
+
+### Data Pipeline Testing
+```bash
+# Upload test data
+python ubiwell-study-backend-core/tests/upload_test_data.py --server https://your-server.com --user test130
+
+# Process test data
+python ubiwell-study-backend-core/tests/test_pipeline_step_by_step.py
+```
+
 ## 📞 Support
 
 For issues and questions:
 1. Check the troubleshooting section above
 2. Review the logs in `/mnt/study/my-study/logs/`
 3. Check service status with `systemctl status`
-4. Contact the framework maintainers
+4. Use the testing utilities in `ubiwell-study-backend-core/tests/`
+5. Contact the framework maintainers
 
 ## 🎯 Next Steps
 

@@ -1,25 +1,34 @@
 # Study Framework Core
 
-A modular, reusable framework for data collection studies that provides core functionality while allowing easy customization for individual studies.
+A modular, reusable framework for data collection studies that provides core functionality while allowing easy customization for individual studies. This framework is designed to be used as a **Git submodule** within study projects.
 
 ## 🚀 Quick Start
 
-### For Developers (Just the Package)
+### **For Study Projects (Submodule Setup)**
 ```bash
-pip install git+https://github.com/UbiWell/ubiwell-study-backend-core.git
+# In your study project directory
+git submodule add https://github.com/UbiWell/ubiwell-study-backend-core.git
+git submodule update --init --recursive
+
+# Run setup script
+cd ubiwell-study-backend-core
+sudo python setup_study.py "My Study" \
+    --user myuser \
+    --db-username mydbuser \
+    --db-password mydbpass \
+    --db-name my_study_db \
+    --auth-key my-auth-key \
+    --announcement-key my-announcement-key
 ```
 
-### For Complete Study Setup
+### **For Framework Development**
 ```bash
-# Clone framework temporarily
-git clone https://github.com/UbiWell/ubiwell-study-backend-core.git /tmp/study-framework
-cd /tmp/study-framework
+# Clone framework for development
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
+cd ubiwell-study-backend-core
 
-# Run setup
-python setup_study.py "My Study" --user myuser --base-dir /mnt/study
-
-# Clean up (optional)
-rm -rf /tmp/study-framework
+# Install in development mode
+pip install -e .
 ```
 
 ## 📋 What This Framework Provides
@@ -35,25 +44,30 @@ rm -rf /tmp/study-framework
 - **Core Framework**: Standard functionality for all studies
 - **Study-Specific Extensions**: Custom dashboard columns, API endpoints, processing
 - **Easy Updates**: Update core without affecting customizations
-- **Private Distribution**: Git-based installation (no PyPI required)
+- **Submodule Integration**: Seamless integration with study projects
 
 ## 🎯 Use Cases
 
 ### **New Study Setup**
 ```bash
-# Clone framework temporarily
-git clone https://github.com/UbiWell/ubiwell-study-backend-core.git /tmp/study-framework
-cd /tmp/study-framework
+# Create study project
+mkdir my-study
+cd my-study
+git init
 
-# Complete automated setup
-python setup_study.py "My Study" \
+# Add framework as submodule
+git submodule add https://github.com/UbiWell/ubiwell-study-backend-core.git
+git submodule update --init --recursive
+
+# Run automated setup
+cd ubiwell-study-backend-core
+sudo python setup_study.py "My Study" \
     --user myuser \
-    --base-dir /mnt/study \
     --db-username mydbuser \
-    --db-password mydbpass
-
-# Clean up (optional)
-rm -rf /tmp/study-framework
+    --db-password mydbpass \
+    --db-name my_study_db \
+    --auth-key my-auth-key \
+    --announcement-key my-announcement-key
 ```
 
 ### **Adding Custom Features**
@@ -69,8 +83,17 @@ class MyStudyDashboard(DashboardBase):
 
 ### **Updating Core Framework**
 ```bash
-# Get latest improvements
+# Update the submodule
+cd ubiwell-study-backend-core
+git submodule update --remote
+
+# Update the framework
 python update_core.py --study-name "My Study"
+
+# Commit the update
+cd ..
+git add ubiwell-study-backend-core
+git commit -m "Update framework to latest version"
 ```
 
 ## 📁 Repository Structure
@@ -119,7 +142,7 @@ ubiwell-study-backend-core/
 
 ### **Documentation**
 - **`SETUP_GUIDE.md`**: Comprehensive setup instructions
-- **`study_framework_core/README.md`**: Developer documentation
+- **`docs/`**: Complete documentation suite
 
 ## 🎨 Customization Examples
 
@@ -157,7 +180,7 @@ class MyStudyDataProcessor(DataProcessor):
 
 ### **When You Release Updates:**
 1. **Push changes** to the UbiWell repository
-2. **Users update** with `python update_core.py --study-name "My Study"`
+2. **Users update** with `git submodule update --remote`
 3. **Core improvements** are applied automatically
 4. **Custom code** stays intact
 
@@ -184,7 +207,7 @@ class MyStudyDataProcessor(DataProcessor):
 
 ## 🚀 Getting Started
 
-1. **Clone the repository**
+1. **Add as submodule** to your study project
 2. **Follow [SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete setup
 3. **Customize** for your study needs
 4. **Deploy** and start collecting data!
