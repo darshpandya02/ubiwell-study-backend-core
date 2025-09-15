@@ -59,3 +59,5 @@ include = ["study_framework_core*"]
 
 [tool.setuptools.package-data]
 "study_framework_core" = ["templates/*", "static/*"]
+
+

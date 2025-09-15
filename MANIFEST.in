@@ -7,3 +7,5 @@ recursive-include study_framework_core/templates *
 recursive-include study_framework_core/static *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+
+

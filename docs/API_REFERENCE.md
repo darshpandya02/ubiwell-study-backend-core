@@ -596,3 +596,5 @@ When request validation fails, the response includes detailed error messages:
 
 **For extension examples, see [EXTENSION_GUIDE.md](EXTENSION_GUIDE.md).**
 **For setup instructions, see [SETUP_GUIDE.md](../SETUP_GUIDE.md).**
+
+

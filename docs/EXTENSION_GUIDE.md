@@ -300,3 +300,5 @@ study_framework_core/
 
 **For setup instructions, see [SETUP_GUIDE.md](../SETUP_GUIDE.md).**
 **For API reference, see [API_REFERENCE.md](API_REFERENCE.md).**
+
+

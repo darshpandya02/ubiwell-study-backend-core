@@ -320,3 +320,5 @@ This architecture provides a sustainable foundation for managing multiple data c
 
 **For extension examples, see [EXTENSION_GUIDE.md](EXTENSION_GUIDE.md).**
 **For setup instructions, see [SETUP_GUIDE.md](../SETUP_GUIDE.md).**
+
+
