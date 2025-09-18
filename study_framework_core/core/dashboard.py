@@ -234,7 +234,12 @@ class DashboardBase(ABC):
             'users': users,
             'active_users': active_users,
             'total_ema_responses': total_ema_responses,
-            'avg_garmin_hours': avg_garmin_hours
+            'avg_garmin_hours': avg_garmin_hours,
+            # Extension points for study-specific customizations
+            'custom_css': self.get_custom_css(),
+            'custom_content': self.get_custom_content(),
+            'custom_scripts': self.get_custom_scripts(),
+            'column_icons': self.get_column_icons()
         }
     
     # NEW: Performance optimization methods
@@ -272,3 +277,48 @@ class DashboardBase(ABC):
             "interval": getattr(self, 'refresh_interval', None),
             "endpoint": "/api/dashboard/refresh"
         }
+    
+    # Extension points for study-specific customizations
+    def get_custom_css(self) -> str:
+        """
+        Get custom CSS for study-specific styling.
+        
+        Override this method in study-specific implementations to add custom CSS.
+        
+        Returns:
+            String containing custom CSS
+        """
+        return ""
+    
+    def get_custom_content(self) -> str:
+        """
+        Get custom HTML content to inject into the dashboard.
+        
+        Override this method in study-specific implementations to add custom content.
+        
+        Returns:
+            String containing custom HTML content
+        """
+        return ""
+    
+    def get_custom_scripts(self) -> str:
+        """
+        Get custom JavaScript for study-specific functionality.
+        
+        Override this method in study-specific implementations to add custom scripts.
+        
+        Returns:
+            String containing custom JavaScript
+        """
+        return ""
+    
+    def get_column_icons(self) -> Dict[str, str]:
+        """
+        Get custom column icons for study-specific columns.
+        
+        Override this method in study-specific implementations to add custom column icons.
+        
+        Returns:
+            Dictionary mapping column names to icon classes
+        """
+        return {}
