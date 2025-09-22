@@ -106,7 +106,7 @@ def login_code_check(code, device):
         if 'access_codes' in user:
             access_codes = user['access_codes']
         access_codes.append(code)
-
+        config = get_config()
         db[config.collections.USERS].update_one({'uid': uid}, {'$set': {device_login_time: login_timestamps, 'access_codes': access_codes}})
         return 1, uid
     except Exception as e:
