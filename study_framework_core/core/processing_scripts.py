@@ -1210,7 +1210,7 @@ class DataProcessor:
                 # Only process users who have logged in (have device_login_time)
                 users = list(self.db['users'].find({
                     '$or': [
-                        {'phone_login_time': {'$exists': True}},
+                        {'ios_login_time': {'$exists': True}},
                         {'garmin_login_time': {'$exists': True}}
                     ]
                 }, {'uid': 1}))
