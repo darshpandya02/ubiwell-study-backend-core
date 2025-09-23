@@ -114,13 +114,16 @@ def check_submodule_setup():
     return True
 
 
-def get_env_name(study_path):
-    """Get conda environment name from study path."""
+def get_env_name(study_path, custom_env_name=None):
+    """Get conda environment name from study path or custom name."""
+    if custom_env_name:
+        return custom_env_name
+    
     study_name = study_path.name
     return f"{study_name}-env"
 
 
-def update_core_framework(study_path, study_name=None):
+def update_core_framework(study_path, study_name=None, conda_env=None):
     """Update the core framework to the latest version."""
     if not study_path:
         print("❌ Could not find study directory!")
@@ -128,7 +131,7 @@ def update_core_framework(study_path, study_name=None):
         sys.exit(1)
     
     study_path = Path(study_path)
-    env_name = get_env_name(study_path)
+    env_name = get_env_name(study_path, conda_env)
     conda_path = get_conda_path(study_path)
     
     print(f"🔄 Updating core framework")
@@ -184,6 +187,7 @@ def main():
     parser = argparse.ArgumentParser(description='Update core framework to latest version')
     parser.add_argument('--study-name', help='Name of the study to update')
     parser.add_argument('--study-path', help='Path to the study directory (auto-detected if not specified)')
+    parser.add_argument('--conda-env', help='Name of your conda environment (automatically defaults to studyfolder-env)')
     
     args = parser.parse_args()
     
@@ -219,9 +223,11 @@ def main():
     
     print(f"Study: {study_path.name}")
     print(f"Path: {study_path}")
+    if args.conda_env:
+        print(f"Conda Environment: {args.conda_env}")
     print()
     
-    update_core_framework(study_path, args.study_name)
+    update_core_framework(study_path, args.study_name, args.conda_env)
 
 
 if __name__ == "__main__":
