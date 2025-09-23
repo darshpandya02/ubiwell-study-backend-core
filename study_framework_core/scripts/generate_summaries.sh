@@ -16,18 +16,16 @@ show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --date DATE         Specific date in YYYY-MM-DD format (default: last 2 hours)"
+    echo "  --date DATE         Specific date in YYYY-MM-DD format (default: today from midnight to now)"
     echo "  --user USER         Specific user to process (optional)"
     echo "  --env ENV           Conda environment name (default: study-env)"
-    echo "  --hours-back HOURS  Hours to look back for summaries (default: 2)"
     echo "  --plots             Also generate plots for the summaries"
     echo "  --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Generate summaries for last 2 hours"
+    echo "  $0                    # Generate summaries for today (midnight to now)"
     echo "  $0 --date 2024-01-15  # Generate summaries for specific date"
     echo "  $0 --user user123     # Generate summaries for specific user"
-    echo "  $0 --hours-back 4     # Generate summaries for last 4 hours"
     echo "  $0 --plots           # Generate summaries and plots"
 }
 
@@ -35,7 +33,6 @@ show_usage() {
 DATE=""
 USER=""
 ENV_NAME="study-env"
-HOURS_BACK="2"
 GENERATE_PLOTS=false
 
 # Parse command line arguments
@@ -51,10 +48,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --env)
             ENV_NAME="$2"
-            shift 2
-            ;;
-        --hours-back)
-            HOURS_BACK="$2"
             shift 2
             ;;
         --plots)
@@ -96,7 +89,7 @@ echo "Starting summary generation..."
 if [[ -n "$DATE" ]]; then
     echo "Date: $DATE"
 else
-    echo "Time range: Last $HOURS_BACK hours (default)"
+    echo "Time range: Today from midnight to now"
 fi
 if [[ -n "$USER" ]]; then
     echo "User: $USER"
@@ -113,13 +106,13 @@ if [[ -n "$USER" ]]; then
     if [[ -n "$DATE" ]]; then
         python -m study_framework_core.core.processing_scripts --action generate_summaries --user "$USER" --date "$DATE"
     else
-        python -m study_framework_core.core.processing_scripts --action generate_summaries --user "$USER" --hours-back "$HOURS_BACK"
+        python -m study_framework_core.core.processing_scripts --action generate_summaries --user "$USER"
     fi
 else
     if [[ -n "$DATE" ]]; then
         python -m study_framework_core.core.processing_scripts --action generate_summaries --date "$DATE"
     else
-        python -m study_framework_core.core.processing_scripts --action generate_summaries --hours-back "$HOURS_BACK"
+        python -m study_framework_core.core.processing_scripts --action generate_summaries
     fi
 fi
 

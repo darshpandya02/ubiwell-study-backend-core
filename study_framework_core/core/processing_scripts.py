@@ -1178,13 +1178,12 @@ class DataProcessor:
     
 
     
-    def generate_daily_summaries(self, date: Optional[str] = None, hours_back: int = 2, force_user: Optional[str] = None) -> bool:
+    def generate_daily_summaries(self, date: Optional[str] = None, force_user: Optional[str] = None) -> bool:
         """
         Generate daily summaries for all users or a specific date.
         
         Args:
-            date: Date in YYYY-MM-DD format (defaults to last 2 hours for cron jobs)
-            hours_back: Number of hours to look back (default: 2 for cron jobs)
+            date: Date in YYYY-MM-DD format (if None, processes today from midnight to now)
             force_user: Force processing for specific user (bypasses login check)
             
         Returns:
@@ -1192,12 +1191,12 @@ class DataProcessor:
         """
         try:
             if date is None:
-                # For cron jobs, process the last 2 hours of data
+                # For cron jobs, process today from midnight to now
                 end_time = datetime.now()
-                start_time = end_time - timedelta(hours=hours_back)
-                start_timestamp = int(start_time.timestamp())
+                target_date = end_time.date()
+                # Use midnight timestamp for consistency (same as manual runs)
+                start_timestamp = int(datetime.combine(target_date, datetime.min.time()).timestamp())
                 end_timestamp = int(end_time.timestamp())
-                target_date = start_time.date()
             else:
                 # For manual runs, process the entire day
                 target_date = datetime.strptime(date, "%Y-%m-%d").date()
@@ -1250,10 +1249,9 @@ class DataProcessor:
             for i in range(days_back):
                 days_ago = i
                 if days_ago == 0:
-                    # Today - generate from midnight to now
+                    # Today - generate from midnight to now (use cronjob logic)
                     self.logger.info(f"Generating summary for today (midnight to now)...")
-                    today = datetime.now().strftime("%Y-%m-%d")
-                    success &= self.generate_daily_summaries(date=today, force_user=force_user)
+                    success &= self.generate_daily_summaries(force_user=force_user)  # No date = cronjob mode
                 else:
                     # Previous days - generate full day (midnight to 11:59 PM)
                     target_date = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
@@ -1594,6 +1592,7 @@ class DataProcessor:
             }
             
             # Save to database (upsert to avoid duplicates)
+            # Use the standardized timestamp (midnight of the day) to prevent duplicates
             self.db[self.config.collections.DAILY_SUMMARY].update_one(
                 {'uid': uid, 'date': start_timestamp},
                 {'$set': summary},
@@ -1930,7 +1929,6 @@ if __name__ == "__main__":
                        required=True, help='Action to perform')
     parser.add_argument('--user', help='Specific user to process')
     parser.add_argument('--date', help='Specific date (YYYY-MM-DD)')
-    parser.add_argument('--hours-back', type=int, default=2, help='Hours to look back for summaries (default: 2)')
     
     args = parser.parse_args()
     
@@ -1945,7 +1943,8 @@ if __name__ == "__main__":
             processor = DataProcessor()
             processor.generate_daily_summaries(args.date)
         else:
+            # For cronjobs, process last 7 days + today
             processor = DataProcessor()
-            processor.generate_daily_summaries(hours_back=args.hours_back)
+            processor.generate_summaries_for_period(days_back=7)
     elif args.action == 'process_garmin':
         process_garmin_files()
