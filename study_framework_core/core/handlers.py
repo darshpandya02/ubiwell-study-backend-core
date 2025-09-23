@@ -37,16 +37,16 @@ def get_db_client():
     import urllib.parse
     import os
     
-    # Debug: Print environment and config info
-    print(f"DEBUG: STUDY_CONFIG_FILE env var: {os.getenv('STUDY_CONFIG_FILE')}")
-    print(f"DEBUG: Current working directory: {os.getcwd()}")
-    print(f"DEBUG: Database config - host: {config.database.host}, port: {config.database.port}, user: {config.database.username}, db: {config.database.database}")
+    # # Debug: Print environment and config info
+    # print(f"DEBUG: STUDY_CONFIG_FILE env var: {os.getenv('STUDY_CONFIG_FILE')}")
+    # print(f"DEBUG: Current working directory: {os.getcwd()}")
+    # print(f"DEBUG: Database config - host: {config.database.host}, port: {config.database.port}, user: {config.database.username}, db: {config.database.database}")
     
     db_user = urllib.parse.quote(str(config.database.username))
     db_pwd = urllib.parse.quote(str(config.database.password))
     db_uri = f"mongodb://{db_user}:{db_pwd}@{config.database.host}:{config.database.port}/{config.database.database}"
     
-    print(f"DEBUG: MongoDB URI: {db_uri}")
+    # print(f"DEBUG: MongoDB URI: {db_uri}")
     
     return MongoClient(db_uri)
 
