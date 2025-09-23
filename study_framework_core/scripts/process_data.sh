@@ -11,6 +11,11 @@ STUDY_DIR="$(dirname "$SCRIPT_DIR")"
 export PYTHONPATH="${STUDY_DIR}:${PYTHONPATH}"
 export STUDY_CONFIG_FILE="${STUDY_DIR}/config/study_config.json"
 
+# Function to add timestamp to echo statements
+log_echo() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -62,7 +67,7 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo "Unknown option: $1"
+            log_echo "Unknown option: $1"
             show_usage
             exit 1
             ;;
@@ -71,67 +76,67 @@ done
 
 # Check if action is provided
 if [[ -z "$ACTION" ]]; then
-    echo "Error: --action is required"
+    log_echo "Error: --action is required"
     show_usage
     exit 1
 fi
 
 # Check if conda is available
 if ! command -v conda &> /dev/null; then
-    echo "Error: conda is not installed or not in PATH"
+    log_echo "Error: conda is not installed or not in PATH"
     exit 1
 fi
 
 # Activate conda environment
-echo "Activating conda environment: $ENV_NAME"
+log_echo "Activating conda environment: $ENV_NAME"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$ENV_NAME"
 
 if [[ $? -ne 0 ]]; then
-    echo "Error: Failed to activate conda environment: $ENV_NAME"
+    log_echo "Error: Failed to activate conda environment: $ENV_NAME"
     exit 1
 fi
 
 # Change to study directory
 cd "$STUDY_DIR"
 
-echo "Starting data processing..."
-echo "Action: $ACTION"
+log_echo "Starting data processing..."
+log_echo "Action: $ACTION"
 if [[ -n "$USER" ]]; then
-    echo "User: $USER"
+    log_echo "User: $USER"
 fi
 if [[ -n "$DATE" ]]; then
-    echo "Date: $DATE"
+    log_echo "Date: $DATE"
 fi
-echo "Study directory: $STUDY_DIR"
+log_echo "Study directory: $STUDY_DIR"
 echo ""
 
 # Execute the appropriate action
 case "$ACTION" in
     process_data)
         if [[ -n "$USER" ]]; then
-            echo "Processing data for user: $USER"
+            log_echo "Processing data for user: $USER"
             python -m study_framework_core.core.processing_scripts --action process_data --user "$USER"
         else
-            echo "Processing data for all users"
+            log_echo "Processing data for all users"
             python -m study_framework_core.core.processing_scripts --action process_data
         fi
         ;;
     generate_summaries)
         if [[ -n "$DATE" ]]; then
-            echo "Generating summaries for date: $DATE"
+            log_echo "Generating summaries for date: $DATE"
             python -m study_framework_core.core.processing_scripts --action generate_summaries --date "$DATE"
         else
-            echo "Generating summaries for yesterday"
+            log_echo "Generating summaries for yesterday"
             python -m study_framework_core.core.processing_scripts --action generate_summaries
         fi
         ;;
     process_garmin)
-        echo "Processing Garmin FIT files"
+        log_echo "Processing Garmin FIT files"
         python -m study_framework_core.core.processing_scripts --action process_garmin
         ;;
     *)
-        echo "Error: Unknown action: $ACTION"
+        log_echo "Error: Unknown action: $ACTION"
         show_usage
         exit 1
         ;;
@@ -140,9 +145,9 @@ esac
 # Check exit status
 if [[ $? -eq 0 ]]; then
     echo ""
-    echo "✅ Data processing completed successfully!"
+    log_echo "✅ Data processing completed successfully!"
 else
     echo ""
-    echo "❌ Data processing failed!"
+    log_echo "❌ Data processing failed!"
     exit 1
 fi
