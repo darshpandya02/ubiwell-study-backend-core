@@ -1086,7 +1086,7 @@ class DataProcessor:
                 'timestamp': row.timestamp + row.micros / 1_000_000,
                 'processed_at': datetime.now().timestamp()
             }
-            return self.config.collections.GARMIN, record
+            return self.config.collections.GARMIN_ACCELEROMETER, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin accelerometer: {e}")
             return None
