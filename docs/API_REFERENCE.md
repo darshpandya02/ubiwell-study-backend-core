@@ -536,6 +536,7 @@ class CollectionNames:
     GARMIN_HR = 'garmin_hr'
     GARMIN_STRESS = 'garmin_stress'
     GARMIN_IBI = 'garmin_ibi'
+    GARMIN_ACCELEROMETER = 'garmin_accelerometer'
     GARMIN_RESPIRATION = 'garmin_respiration'
     GARMIN_STEPS = 'garmin_steps'
     GARMIN_ENERGY = 'garmin_energy'

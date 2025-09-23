@@ -313,6 +313,7 @@ class StepByStepTester:
             config.collections.GARMIN_HR,
             config.collections.GARMIN_STRESS,
             config.collections.GARMIN_STEPS,
+            config.collections.GARMIN_ACCELEROMETER,
             config.collections.GARMIN_RESPIRATION,
             config.collections.GARMIN_IBI,
             config.collections.IOS_ACCELEROMETER,
@@ -360,7 +361,7 @@ class StepByStepTester:
             'location_data', 'activity_data', 'steps_data', 'battery_data',
             'wifi_data', 'bluetooth_data', 'brightness_data', 'garmin_hr_data',
             'garmin_stress_data', 'garmin_steps_data', 'garmin_respiration_data',
-            'garmin_ibi_data', 'accelerometer_data', 'calllog_data',
+            'garmin_ibi_data', 'garmin_accelerometer', 'calllog_data',
             'lock_unlock_data', 'ema_data', 'ema_status_data', 'notification_data',
             'app_usage_data', 'daily_diary_data', 'daily_summaries', 'unknown_events_data'
         ]

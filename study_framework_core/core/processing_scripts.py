@@ -129,6 +129,11 @@ class DataProcessor:
                 ('uid', pymongo.ASCENDING),
                 ('timestamp', pymongo.ASCENDING)
             ], unique=True, dropDups=True)
+
+            self.db[self.config.collections.GARMIN_ACCELEROMETER].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
             
             self.db[self.config.collections.GARMIN_STEPS].create_index([
                 ('uid', pymongo.ASCENDING),
@@ -1081,7 +1086,7 @@ class DataProcessor:
                 'timestamp': row.timestamp + row.micros / 1_000_000,
                 'processed_at': datetime.now().timestamp()
             }
-            return 'accelerometer_data', record
+            return self.config.collections.GARMIN, record
         except Exception as e:
             self.logger.error(f"Error processing Garmin accelerometer: {e}")
             return None
