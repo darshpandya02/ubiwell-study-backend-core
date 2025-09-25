@@ -631,6 +631,9 @@ class DataProcessor:
                         continue
             
             conn.close()
+
+            self.logger.info(f"Flushing records for {db_file}...")
+            self.flush_records()
             
             # Archive the processed file
             self.archive_file(user, str(db_file))
