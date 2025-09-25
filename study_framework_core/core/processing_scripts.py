@@ -226,20 +226,22 @@ class DataProcessor:
     
     def flush_records(self, collection: str = None):
         """Flush records to MongoDB using bulk insert."""
-        try:
-            if collection:
-                collections_to_flush = [collection]
-            else:
-                collections_to_flush = list(self.records.keys())
+        
+        if collection:
+            collections_to_flush = [collection]
+        else:
+            collections_to_flush = list(self.records.keys())
             
-            for coll in collections_to_flush:
+        for coll in collections_to_flush:
+            try:
                 if coll in self.records and self.records[coll]:
                     self.db[coll].insert_many(self.records[coll], ordered=False)
                     self.logger.info(f"Bulk inserted {len(self.records[coll])} records to {coll}")
-                    self.records[coll].clear()
                     
-        except Exception as e:
-            self.logger.error(f"Error flushing records to {collection}: {e}")
+            except Exception as e:
+                self.logger.error(f"Error flushing records to {coll}: {e}")
+
+            self.records[coll].clear()
     
     def archive_file(self, user: str, file_path: str):
         """Move processed file from upload to processed directory."""
