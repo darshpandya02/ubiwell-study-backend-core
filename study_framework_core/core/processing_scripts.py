@@ -749,6 +749,7 @@ class DataProcessor:
                 
                 record = {
                     'uid': user,
+                    'timestamp': start_timestamp,
                     'start_timestamp': start_timestamp,
                     'event_id': row[3],
                     'end_timestamp': self._handle_timestamp_format(split_event[0]) if len(split_event) > 0 else start_timestamp,
