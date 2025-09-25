@@ -84,7 +84,9 @@ class LoggingConfig:
     """Logging configuration settings."""
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
+    file_path: Optional[str] = None  # Keep for backward compatibility, but not used
+    max_bytes: int = 10485760  # 10MB
+    backup_count: int = 5
 
 @dataclass
 class SecurityConfig:
