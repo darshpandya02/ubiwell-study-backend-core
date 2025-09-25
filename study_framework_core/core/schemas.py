@@ -28,7 +28,7 @@ class UserPingSchema(Schema):
     uid = fields.String(required=True)
     device = fields.String(required=True)
     device_type = fields.String()
-    # empatica_connected = fields.Number()  # REMOVED (outdated, no longer used)
+    empatica_connected = fields.Number()  # REMOVED (outdated, no longer used)
     auth_key = fields.String()
 
 class EMASchema(Schema):
