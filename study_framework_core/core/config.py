@@ -54,6 +54,7 @@ class CollectionNames:
     # User collections
     USERS = 'users'
     USER_CODE_MAPPINGS = 'user_code_mappings'
+    USER_PINGS = 'user_pings'
 
 
 @dataclass
