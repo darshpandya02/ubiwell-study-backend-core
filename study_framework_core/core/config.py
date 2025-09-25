@@ -84,9 +84,6 @@ class LoggingConfig:
     """Logging configuration settings."""
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file_path: Optional[str] = None
-    max_bytes: int = 10485760  # 10MB
-    backup_count: int = 5
 
 
 @dataclass
@@ -182,6 +179,12 @@ class StudyFrameworkConfig:
             self.server.port = int(os.getenv('SERVER_PORT'))
         if os.getenv('SERVER_WORKERS'):
             self.server.workers = int(os.getenv('SERVER_WORKERS'))
+        
+        # Logging
+        if os.getenv('LOG_LEVEL'):
+            self.logging.level = os.getenv('LOG_LEVEL')
+        if os.getenv('LOG_FORMAT'):
+            self.logging.format = os.getenv('LOG_FORMAT')
         
         # Security
         if os.getenv('SECRET_KEY'):

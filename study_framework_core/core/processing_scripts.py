@@ -46,9 +46,19 @@ class DataProcessor:
         logs_dir = Path(self.config.paths.logs_dir)
         logs_dir.mkdir(parents=True, exist_ok=True)
         
+        # Get logging level from config
+        log_level = getattr(logging, self.config.logging.level.upper(), logging.INFO)
+        
+        # Check for environment variable override
+        if os.getenv('REDUCE_LOGGING', 'false').lower() == 'true':
+            log_level = logging.WARNING
+        elif os.getenv('LOG_LEVEL'):
+            env_level = os.getenv('LOG_LEVEL').upper()
+            log_level = getattr(logging, env_level, log_level)
+        
         logging.basicConfig(
-            level=logging.ERROR,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            level=log_level,
+            format=self.config.logging.format,
             handlers=[
                 logging.FileHandler(logs_dir / "data_processing.log"),
                 logging.StreamHandler()
