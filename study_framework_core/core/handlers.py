@@ -132,7 +132,7 @@ def save_user_ping(uid, device, device_type):
 
         info = {'uid': uid, 'device': device, 'device_type': device_type, 'timestamp': timestamp}
         try:
-            db['user_pings'].insert_one(info)
+            db[config.collections.USER_PINGS].insert_one(info)
         except DuplicateKeyError:
             logging.warning(f"Duplicate ping insert failed for {info}")
     except Exception as e:

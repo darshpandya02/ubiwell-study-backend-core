@@ -208,6 +208,12 @@ class DataProcessor:
                 ('uid', pymongo.ASCENDING),
                 ('uid_code', pymongo.ASCENDING)
             ], unique=True, dropDups=True)
+
+            self.db[self.config.collections.USER_PINGS].create_index([
+                ('uid', pymongo.ASCENDING),
+                ('timestamp', pymongo.ASCENDING)
+            ], unique=True, dropDups=True)
+            
             
             self.logger.info("Successfully initialized MongoDB collections with indexes")
             
