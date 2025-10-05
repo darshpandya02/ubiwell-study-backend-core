@@ -309,7 +309,7 @@
 
                 if (result.success) {
                     showAlert(`Participant ${formData.uid} created successfully!`, 'success');
-                    showUserResults([result.user], 'Single Participant Created');
+                    showUserResults(result.user, 'Single Participant Created');
                     document.getElementById('singleUserForm').reset();
                     document.getElementById('singleStudyId').value = 'A1';
                     loadUsers();
@@ -435,49 +435,95 @@
             }
         }
 
-        // Show single user results
-        function showUserResults(user, title) {
+        // Show user results (handles both single user and multiple users)
+        function showUserResults(users, title) {
             const modalBody = document.getElementById('resultsModalBody');
-            modalBody.innerHTML = `
-                <h6>${title}</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Field</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Participant ID</strong></td>
-                                <td class="password-field">${user.uid}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Study Password</strong></td>
-                                <td class="password-field">${user.study_pass}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Garmin Password</strong></td>
-                                <td class="password-field">${user.garmin_pass}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>UID Code</strong></td>
-                                <td class="password-field">${user.uid_code}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Email</strong></td>
-                                <td>${user.email || '-'}</td>
-                            </tr>
+            
+            // Handle both single user (object) and multiple users (array)
+            const userArray = Array.isArray(users) ? users : [users];
+            
+            if (userArray.length === 1) {
+                // Single user display
+                const user = userArray[0];
+                modalBody.innerHTML = `
+                    <h6>${title}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Field</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Participant ID</strong></td>
+                                    <td class="password-field">${user.uid}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Study Password</strong></td>
+                                    <td class="password-field">${user.study_pass}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Garmin Password</strong></td>
+                                    <td class="password-field">${user.garmin_pass}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>UID Code</strong></td>
+                                    <td class="password-field">${user.uid_code}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email</strong></td>
+                                    <td>${user.email || '-'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> Please save these credentials securely. They cannot be retrieved later.
+                    </div>
+                `;
+            } else {
+                // Multiple users display
+                let tableRows = '';
+                userArray.forEach(user => {
+                    tableRows += `
+                        <tr>
+                            <td>${user.uid}</td>
+                            <td class="password-field">${user.study_pass}</td>
+                            <td class="password-field">${user.garmin_pass}</td>
+                            <td class="password-field">${user.uid_code}</td>
+                            <td>${user.email || '-'}</td>
+                        </tr>
+                    `;
+                });
 
-                        </tbody>
-                    </table>
-                </div>
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Important:</strong> Please save these credentials securely. They cannot be retrieved later.
-                </div>
-            `;
+                modalBody.innerHTML = `
+                    <h6>${title}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Participant ID</th>
+                                    <th>Study Password</th>
+                                    <th>Garmin Password</th>
+                                    <th>UID Code</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> Please save these credentials securely. They cannot be retrieved later.
+                    </div>
+                `;
+            }
+            
             resultsModal.show();
         }
 
