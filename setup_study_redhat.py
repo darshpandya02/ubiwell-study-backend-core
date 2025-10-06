@@ -442,6 +442,18 @@ def create_conda_environment(conda_path, study_name, username, python_version="3
     # Set proper ownership
     run_command(f"chown -R {username}:{username} {envs_dir}")
     
+    # Accept Terms of Service for conda channels
+    print(f"🔧 Accepting conda Terms of Service...")
+    tos_result1 = run_command(f"{conda_path}/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main", check=False)
+    tos_result2 = run_command(f"{conda_path}/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r", check=False)
+    
+    if tos_result1.returncode == 0 and tos_result2.returncode == 0:
+        print(f"✅ Terms of Service accepted successfully")
+    else:
+        print(f"⚠️ TOS acceptance may have failed, but continuing...")
+        print(f"Debug - TOS main: {tos_result1.stdout} {tos_result1.stderr}")
+        print(f"Debug - TOS r: {tos_result2.stdout} {tos_result2.stderr}")
+    
     # Verify configuration
     final_config = run_command(f"{conda_path}/bin/conda config --show envs_dirs", check=False)
     print(f"🔍 Updated conda envs_dirs: {final_config.stdout}")
