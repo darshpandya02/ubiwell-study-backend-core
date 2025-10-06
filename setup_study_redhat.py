@@ -276,7 +276,7 @@ def create_directory_structure(study_name, username, base_dir="/opt/studies"):
     return study_dir
 
 
-def create_conda_environment(conda_path, study_name, username):
+def create_conda_environment(conda_path, study_name, username, python_version="3.9"):
     """Create conda environment for the study."""
     env_name = f"{study_name.lower().replace(' ', '-')}-env"
     print(f"🐍 Creating conda environment: {env_name}")
@@ -288,7 +288,7 @@ def create_conda_environment(conda_path, study_name, username):
         return env_name
     
     # Create environment
-    run_command(f"{conda_path}/bin/conda create -n {env_name} python=3.9 -y")
+    run_command(f"{conda_path}/bin/conda create -n {env_name} python={python_version} -y")
     
     # Set ownership of conda environments directory
     conda_envs_dir = f"{conda_path}/envs"
@@ -336,7 +336,7 @@ def install_packages(conda_path, env_name, study_dir):
     print("✅ All packages installed successfully")
 
 
-def create_config_file(study_dir, study_name, db_username, db_password, db_name, auth_key, announcement_key):
+def create_config_file(study_dir, study_name, db_username, db_password, db_name, db_host, db_port, auth_key, announcement_key):
     """Create the study configuration file."""
     print(f"⚙️ Creating configuration file...")
     
@@ -346,8 +346,8 @@ def create_config_file(study_dir, study_name, db_username, db_password, db_name,
             "version": "1.0.0"
         },
         "database": {
-            "host": "localhost",
-            "port": 27017,
+            "host": db_host,
+            "port": int(db_port),
             "username": db_username,
             "password": db_password,
             "database": db_name
@@ -718,9 +718,14 @@ def main():
     parser = argparse.ArgumentParser(description="Setup Study Framework Core on Red Hat systems")
     parser.add_argument("study_name", help="Name of the study")
     parser.add_argument("--user", required=True, help="System user for the study")
+    parser.add_argument("--study-path", help="Path to study directory (auto-detected if not specified)")
+    parser.add_argument("--python-version", default="3.9", help="Python version for conda environment (default: 3.9)")
+    parser.add_argument("--tokens", nargs='+', help="Authentication tokens")
     parser.add_argument("--db-username", required=True, help="MongoDB username")
     parser.add_argument("--db-password", required=True, help="MongoDB password")
     parser.add_argument("--db-name", required=True, help="MongoDB database name")
+    parser.add_argument("--db-host", default="localhost", help="MongoDB host (default: localhost)")
+    parser.add_argument("--db-port", default="27017", help="MongoDB port (default: 27017)")
     parser.add_argument("--auth-key", required=True, help="API authentication key")
     parser.add_argument("--announcement-key", required=True, help="Announcement system key")
     parser.add_argument("--base-dir", default="/opt/studies", help="Base directory for studies (default: /opt/studies)")
@@ -747,14 +752,14 @@ def main():
     study_dir = create_directory_structure(args.study_name, args.user, args.base_dir)
     
     # Setup conda environment
-    env_name = create_conda_environment(conda_path, args.study_name, args.user)
+    env_name = create_conda_environment(conda_path, args.study_name, args.user, args.python_version)
     
     # Install packages
     install_packages(conda_path, env_name, study_dir)
     
     # Create configuration
     create_config_file(study_dir, args.study_name, args.db_username, args.db_password, 
-                      args.db_name, args.auth_key, args.announcement_key)
+                      args.db_name, args.db_host, args.db_port, args.auth_key, args.announcement_key)
     
     # Create WSGI files
     create_wsgi_files(study_dir, args.study_name)
