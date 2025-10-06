@@ -828,6 +828,27 @@ def create_nginx_config(study_name, study_dir):
     
     service_name = study_name.lower().replace(' ', '-')
     
+    # Create proxy_params file if it doesn't exist
+    proxy_params_path = "/etc/nginx/proxy_params"
+    if not os.path.exists(proxy_params_path):
+        print(f"🔧 Creating proxy_params file...")
+        proxy_params_content = """proxy_set_header Host $http_host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_redirect off;
+proxy_buffering off;
+"""
+        with open(proxy_params_path, 'w') as f:
+            f.write(proxy_params_content)
+        print(f"✅ Created proxy_params file: {proxy_params_path}")
+    
+    # Fix nginx log permissions
+    print(f"🔧 Fixing nginx log permissions...")
+    run_command("mkdir -p /var/log/nginx", check=False)
+    run_command("chown -R nginx:nginx /var/log/nginx", check=False)
+    run_command("chmod 755 /var/log/nginx", check=False)
+    
     nginx_config = f"""server {{
     listen 80;
     server_name _;
@@ -864,8 +885,19 @@ def create_nginx_config(study_name, study_dir):
         f.write(nginx_config)
     
     # Test and reload nginx
-    run_command("nginx -t")
-    run_command("systemctl reload nginx")
+    print(f"🔧 Testing nginx configuration...")
+    test_result = run_command("nginx -t", check=False)
+    if test_result.returncode != 0:
+        print(f"❌ Nginx configuration test failed:")
+        print(f"Debug - nginx test output: {test_result.stdout}")
+        print(f"Debug - nginx test error: {test_result.stderr}")
+        print(f"💡 Manual test command: nginx -t")
+        print(f"💡 Check nginx error logs: tail -f /var/log/nginx/error.log")
+        print(f"⚠️ Continuing setup without nginx reload...")
+    else:
+        print(f"✅ Nginx configuration test passed")
+        run_command("systemctl reload nginx")
+        print(f"✅ Nginx reloaded successfully")
     
     print(f"✅ Nginx configuration created: {nginx_file}")
 
