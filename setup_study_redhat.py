@@ -51,6 +51,14 @@ def check_redhat_system():
         with open('/etc/redhat-release', 'r') as f:
             release_info = f.read().strip()
             print(f"✅ Detected Red Hat system: {release_info}")
+            
+            # Extract version information
+            if 'release 8' in release_info or 'release 9' in release_info:
+                print("✅ Compatible RHEL version detected")
+            else:
+                print("⚠️ Warning: This script is optimized for RHEL 8/9")
+                print("📝 MongoDB installation may require manual setup")
+            
             return True
     except FileNotFoundError:
         print("❌ This script is designed for Red Hat/CentOS/RHEL systems")
@@ -68,6 +76,20 @@ def check_root():
 def check_dependencies():
     """Check and install required system dependencies."""
     print("🔍 Checking system dependencies...")
+    
+    # Check if MongoDB is already installed
+    if shutil.which('mongod'):
+        print("✅ MongoDB is already installed")
+        try:
+            # Check if MongoDB is running
+            result = run_command("systemctl is-active mongod", check=False)
+            if result.returncode == 0:
+                print("✅ MongoDB service is running")
+            else:
+                print("⚠️ MongoDB is installed but not running")
+                print("💡 Start MongoDB with: sudo systemctl start mongod")
+        except:
+            print("⚠️ Could not check MongoDB service status")
     
     # Check if dnf/yum is available
     if not shutil.which('dnf') and not shutil.which('yum'):
@@ -92,18 +114,66 @@ def check_dependencies():
     print("📦 Installing required packages...")
     
     # Add MongoDB repository first
-    if package_manager == 'dnf':
-        run_command(f"{package_manager} install -y https://repo.mongodb.org/yum/redhat/$(rpm -E %rhel)/mongodb-org/6.0/x86_64/RPMS/mongodb-org-6.0.6-1.el8.x86_64.rpm")
-    else:
-        # For older systems with yum
-        run_command(f"{package_manager} install -y https://repo.mongodb.org/yum/redhat/$(rpm -E %rhel)/mongodb-org/6.0/x86_64/RPMS/mongodb-org-6.0.6-1.el8.x86_64.rpm")
+    print("🔧 Setting up MongoDB repository...")
+    try:
+        # Create MongoDB repository file
+        mongodb_repo_content = """[mongodb-org-6.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/6.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
+"""
+        
+        # Write repository file
+        with open('/etc/yum.repos.d/mongodb-org-6.0.repo', 'w') as f:
+            f.write(mongodb_repo_content)
+        
+        print("✅ MongoDB repository configured")
+        
+    except Exception as e:
+        print(f"⚠️ Warning: Could not configure MongoDB repository: {e}")
+        print("📝 You may need to install MongoDB manually")
     
     # Install other packages
     for package in required_packages:
-        if package != 'mongodb-org':  # Already installed above
+        try:
             run_command(f"{package_manager} install -y {package}")
+        except Exception as e:
+            if package == 'mongodb-org':
+                print(f"⚠️ Warning: Could not install MongoDB via package manager: {e}")
+                provide_mongodb_alternatives()
+                print("🔄 Continuing with setup... MongoDB can be installed later")
+            else:
+                print(f"❌ Error installing {package}: {e}")
+                raise e
     
     print("✅ System dependencies installed")
+
+
+def provide_mongodb_alternatives():
+    """Provide alternative MongoDB installation methods."""
+    print("\n🔧 Alternative MongoDB Installation Methods:")
+    print("=" * 50)
+    print("If the automatic MongoDB installation failed, try these alternatives:")
+    print()
+    print("1. Manual Repository Setup:")
+    print("   sudo dnf config-manager --add-repo https://repo.mongodb.org/yum/redhat/8/mongodb-org/6.0/x86_64/")
+    print("   sudo dnf install -y mongodb-org")
+    print()
+    print("2. Direct RPM Installation:")
+    print("   wget https://repo.mongodb.org/yum/redhat/8/mongodb-org/6.0/x86_64/RPMS/mongodb-org-6.0.6-1.el8.x86_64.rpm")
+    print("   sudo dnf install -y mongodb-org-6.0.6-1.el8.x86_64.rpm")
+    print()
+    print("3. Docker Installation:")
+    print("   sudo dnf install -y docker")
+    print("   sudo systemctl start docker")
+    print("   sudo docker run -d --name mongodb -p 27017:27017 mongo:6.0")
+    print()
+    print("4. Manual Download:")
+    print("   Visit: https://docs.mongodb.com/manual/administration/install-on-linux/")
+    print("   Follow the Red Hat/CentOS installation instructions")
+    print()
 
 
 def check_anaconda():
