@@ -943,10 +943,10 @@ from study_framework_core.core.handlers import create_admin_user
 try:
     create_admin_user("admin", "{password}")
     print("✅ Admin user created successfully")
-    print(f"Username: admin")
-    print(f"Password: {password}")
+    print("Username: admin")
+    print("Password: {password}")
 except Exception as e:
-    print(f"❌ Error creating admin user: {{e}}")
+    print("❌ Error creating admin user: " + str(e))
     sys.exit(1)
 """
     
@@ -955,8 +955,22 @@ except Exception as e:
     os.chmod(temp_script_path, 0o755)
     
     try:
-        run_command(f"{conda_path}/bin/conda run -n {env_name} python {temp_script_path}")
-        print(f"✅ Admin user created with password: {password}")
+        print(f"🔧 Running admin user creation script...")
+        print(f"🔍 Script path: {temp_script_path}")
+        print(f"🔍 Conda path: {conda_path}")
+        print(f"🔍 Environment: {env_name}")
+        
+        result = run_command(f"{conda_path}/bin/conda run -n {env_name} python {temp_script_path}", check=False)
+        
+        if result.returncode == 0:
+            print(f"✅ Admin user created with password: {password}")
+        else:
+            print(f"❌ Admin user creation failed with return code: {result.returncode}")
+            print(f"Debug - script output: {result.stdout}")
+            print(f"Debug - script error: {result.stderr}")
+            print(f"💡 Manual test command: {conda_path}/bin/conda run -n {env_name} python {temp_script_path}")
+            raise Exception(f"Admin user creation failed: {result.stderr}")
+            
     except Exception as e:
         print(f"⚠️ Warning: Could not create admin user automatically: {e}")
         print("💡 You can create the admin user manually later using:")
@@ -965,6 +979,7 @@ except Exception as e:
     finally:
         # Clean up temporary script
         if temp_script_path.exists():
+            print(f"🧹 Cleaning up temporary script: {temp_script_path}")
             temp_script_path.unlink()
 
 
