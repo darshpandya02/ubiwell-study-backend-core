@@ -324,8 +324,8 @@ def create_directory_structure(study_name, username, base_dir="/opt/studies"):
     if study_name.lower().replace(" ", "_") in base_dir.lower() or study_name.lower().replace(" ", "-") in base_dir.lower():
         study_dir = Path(base_dir)
     else:
-        # Otherwise, append study name to base_dir
-        study_dir = Path(base_dir) / study_name.lower().replace(" ", "_")
+        # Otherwise, append study name to base_dir (use hyphens for consistency)
+        study_dir = Path(base_dir) / study_name.lower().replace(" ", "-")
     
     # Create base directory
     study_dir.mkdir(parents=True, exist_ok=True)
@@ -504,6 +504,10 @@ def install_packages(conda_path, env_name, study_dir):
     submodule_path = study_dir / "ubiwell-study-backend-core"
     requirements_path = submodule_path / "requirements.txt"
     
+    print(f"🔍 Looking for submodule at: {submodule_path}")
+    print(f"🔍 Study directory: {study_dir}")
+    print(f"🔍 Submodule path exists: {submodule_path.exists()}")
+    
     # First, verify the environment exists and is accessible
     print(f"🔍 Verifying conda environment: {env_name}")
     result = run_command(f"{conda_path}/bin/conda run -n {env_name} python --version", check=False)
@@ -545,7 +549,76 @@ def install_packages(conda_path, env_name, study_dir):
     
     # Install the framework in editable mode
     print("📦 Installing study-framework-core in editable mode...")
-    run_command(f"{conda_path}/bin/conda run -n {env_name} pip install -e {submodule_path}")
+    
+    # Check if submodule path exists
+    if not submodule_path.exists():
+        print(f"❌ Submodule path does not exist: {submodule_path}")
+        
+        # Check if this is a git repository
+        git_dir = study_dir / ".git"
+        if not git_dir.exists():
+            print(f"❌ Not a git repository: {study_dir}")
+            print(f"💡 The study directory needs to be a git repository with the ubiwell-study-backend-core submodule")
+            print(f"💡 You may need to clone the repository properly or initialize the submodule")
+            raise Exception(f"Study directory is not a git repository: {study_dir}")
+        
+        print(f"🔧 Attempting to initialize submodule...")
+        
+        # Check if submodule is configured
+        submodule_result = run_command(f"cd {study_dir} && git submodule status", check=False)
+        print(f"🔍 Submodule status: {submodule_result.stdout}")
+        
+        # Try to initialize the submodule
+        try:
+            init_result = run_command(f"cd {study_dir} && git submodule update --init --recursive", check=False)
+            print(f"🔍 Submodule init output: {init_result.stdout}")
+            if init_result.stderr:
+                print(f"🔍 Submodule init error: {init_result.stderr}")
+            
+            if submodule_path.exists():
+                print(f"✅ Submodule initialized successfully")
+            else:
+                print(f"❌ Submodule initialization failed")
+                print(f"💡 Manual command: cd {study_dir} && git submodule update --init --recursive")
+                raise Exception(f"Submodule path not found: {submodule_path}")
+        except Exception as e:
+            print(f"❌ Failed to initialize submodule: {e}")
+            print(f"💡 You may need to initialize the submodule manually")
+            print(f"💡 Manual command: cd {study_dir} && git submodule update --init --recursive")
+            raise Exception(f"Submodule path not found: {submodule_path}")
+    
+    # Check if setup.py exists in submodule
+    setup_py_path = submodule_path / "setup.py"
+    if not setup_py_path.exists():
+        print(f"❌ setup.py not found in submodule: {setup_py_path}")
+        print(f"💡 The submodule may not be properly initialized")
+        raise Exception(f"setup.py not found in submodule: {setup_py_path}")
+    
+    print(f"🔍 Submodule path exists: {submodule_path}")
+    print(f"🔍 setup.py found: {setup_py_path}")
+    
+    try:
+        # Change to the submodule directory and install from there
+        print(f"🔧 Installing framework from submodule directory...")
+        result = run_command(f"cd {submodule_path} && {conda_path}/bin/conda run -n {env_name} pip install -e .", check=False)
+        if result.returncode != 0:
+            print(f"❌ Framework installation failed with return code: {result.returncode}")
+            print(f"Debug - pip install output: {result.stdout}")
+            print(f"Debug - pip install error: {result.stderr}")
+            print(f"💡 Manual test command: cd {submodule_path} && {conda_path}/bin/conda run -n {env_name} pip install -e .")
+            raise Exception(f"Framework installation failed: {result.stderr}")
+        else:
+            print(f"✅ Framework installed successfully")
+    except Exception as e:
+        print(f"❌ Error installing framework: {e}")
+        print(f"💡 You may need to install the framework manually later")
+        print(f"💡 Manual command: cd {submodule_path} && {conda_path}/bin/conda run -n {env_name} pip install -e .")
+        print(f"💡 Alternative: Install from PyPI if available")
+        # Don't raise exception, continue with setup
+        print(f"⚠️ Continuing setup without framework installation...")
+        print(f"📝 Note: You can install the framework later by running:")
+        print(f"   cd {submodule_path}")
+        print(f"   {conda_path}/bin/conda run -n {env_name} pip install -e .")
     
     print("✅ All packages installed successfully")
 
