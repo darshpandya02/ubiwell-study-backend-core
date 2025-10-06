@@ -650,14 +650,18 @@ def create_config_file(study_dir, study_name, db_username, db_password, db_name,
         },
         "paths": {
             "base_dir": str(study_dir),
+            "data_dir": str(study_dir / "data"),
+            "logs_dir": str(study_dir / "logs"),
+            "sockets_dir": "/var/sockets",
+            "static_dir": str(study_dir / "static"),
+            "uploads_dir": str(study_dir / "uploads"),
             "data_upload_path": str(study_dir / "data_uploads" / "uploads"),
             "data_processed_path": str(study_dir / "data_uploads" / "processed"),
-            "data_archived_path": str(study_dir / "data_uploads" / "archived"),
+            "data_exceptions_path": str(study_dir / "data_uploads" / "exceptions"),
+            "data_upload_logs_path": str(study_dir / "data_uploads" / "logs"),
+            "active_sensing_upload_path": str(study_dir / "active_sensing"),
             "ema_file_path": str(study_dir / "ema_surveys"),
-            "logs_path": str(study_dir / "logs"),
-            "scripts_path": str(study_dir / "scripts"),
-            "templates_path": str(study_dir / "templates"),
-            "static_path": str(study_dir / "static")
+            "config_dir": str(study_dir / "config")
         },
         "logging": {
             "level": "INFO",
