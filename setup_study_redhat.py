@@ -394,17 +394,46 @@ def create_conda_environment(conda_path, study_name, username, python_version="3
     result = run_command(f"{conda_path}/bin/conda env list", check=False)
     if env_name in result.stdout:
         print(f"✅ Environment {env_name} already exists")
-        return env_name
+        # Verify it's actually accessible
+        print(f"🔍 Testing environment accessibility...")
+        test_result = run_command(f"{conda_path}/bin/conda run -n {env_name} python --version", check=False)
+        if test_result.returncode == 0:
+            print(f"✅ Environment {env_name} is accessible: {test_result.stdout.strip()}")
+            return env_name
+        else:
+            print(f"⚠️ Environment {env_name} exists but is not accessible")
+            print(f"Debug - conda run output: {test_result.stdout}")
+            print(f"Debug - conda run error: {test_result.stderr}")
+            print(f"🔧 Recreating environment...")
+            print(f"💡 Manual test command: {conda_path}/bin/conda run -n {env_name} python --version")
+            # Remove the broken environment
+            run_command(f"{conda_path}/bin/conda env remove -n {env_name} -y", check=False)
     
     # Create environment
+    print(f"🔧 Creating conda environment with Python {python_version}...")
     run_command(f"{conda_path}/bin/conda create -n {env_name} python={python_version} -y")
+    
+    # Verify environment was created
+    result = run_command(f"{conda_path}/bin/conda env list", check=False)
+    if env_name not in result.stdout:
+        print(f"❌ Failed to create conda environment: {env_name}")
+        print(f"Debug - conda env list output: {result.stdout}")
+        raise Exception(f"Could not create conda environment: {env_name}")
     
     # Set ownership of conda environments directory
     conda_envs_dir = f"{conda_path}/envs"
     if os.path.exists(conda_envs_dir):
         run_command(f"chown -R {username}:{username} {conda_envs_dir}")
     
-    print(f"✅ Conda environment created: {env_name}")
+    # Final verification that the environment works
+    final_test = run_command(f"{conda_path}/bin/conda run -n {env_name} python --version", check=False)
+    if final_test.returncode != 0:
+        print(f"❌ Environment creation failed - cannot access {env_name}")
+        print(f"Debug - final test output: {final_test.stdout}")
+        print(f"Debug - final test error: {final_test.stderr}")
+        raise Exception(f"Failed to create accessible conda environment: {env_name}")
+    
+    print(f"✅ Conda environment created and verified: {env_name}")
     return env_name
 
 
@@ -415,6 +444,16 @@ def install_packages(conda_path, env_name, study_dir):
     # Get the submodule path
     submodule_path = study_dir / "ubiwell-study-backend-core"
     requirements_path = submodule_path / "requirements.txt"
+    
+    # First, verify the environment exists and is accessible
+    print(f"🔍 Verifying conda environment: {env_name}")
+    result = run_command(f"{conda_path}/bin/conda run -n {env_name} python --version", check=False)
+    if result.returncode != 0:
+        print(f"❌ Cannot access conda environment: {env_name}")
+        print(f"Debug - conda run output: {result.stdout}")
+        print(f"Debug - conda run error: {result.stderr}")
+        raise Exception(f"Conda environment {env_name} is not accessible")
+    print(f"✅ Conda environment is accessible: {result.stdout.strip()}")
     
     if requirements_path.exists():
         print(f"📦 Installing requirements from: {requirements_path}")
@@ -436,7 +475,14 @@ def install_packages(conda_path, env_name, study_dir):
         ]
         
         for package in packages:
-            run_command(f"{conda_path}/bin/conda run -n {env_name} pip install {package}")
+            print(f"📦 Installing {package}...")
+            try:
+                run_command(f"{conda_path}/bin/conda run -n {env_name} pip install {package}")
+                print(f"✅ Successfully installed {package}")
+            except Exception as e:
+                print(f"❌ Failed to install {package}: {e}")
+                print(f"💡 You may need to install this package manually later")
+                # Continue with other packages instead of failing completely
     
     # Install the framework in editable mode
     print("📦 Installing study-framework-core in editable mode...")
