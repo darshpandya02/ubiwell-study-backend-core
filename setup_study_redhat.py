@@ -406,11 +406,35 @@ def create_conda_environment(conda_path, study_name, username, python_version="3
             print(f"Debug - conda run error: {test_result.stderr}")
             print(f"🔧 Recreating environment...")
             print(f"💡 Manual test command: {conda_path}/bin/conda run -n {env_name} python --version")
-            # Remove the broken environment
+            # Remove the broken environment from both locations
             run_command(f"{conda_path}/bin/conda env remove -n {env_name} -y", check=False)
+            # Also remove from user directory if it exists there
+            user_env_path = f"/home/{username}/.conda/envs/{env_name}"
+            if os.path.exists(user_env_path):
+                print(f"🧹 Removing user environment: {user_env_path}")
+                run_command(f"rm -rf {user_env_path}", check=False)
     
     # Create environment
     print(f"🔧 Creating conda environment with Python {python_version}...")
+    
+    # Configure conda to use system-wide environments
+    print(f"🔧 Configuring conda to use system environments...")
+    
+    # Check current conda configuration
+    config_result = run_command(f"{conda_path}/bin/conda config --show envs_dirs", check=False)
+    print(f"🔍 Current conda envs_dirs: {config_result.stdout}")
+    
+    # Set system environment directory
+    run_command(f"{conda_path}/bin/conda config --set envs_dirs {conda_path}/envs", check=False)
+    
+    # Remove user environment directory from config
+    run_command(f"{conda_path}/bin/conda config --remove envs_dirs /home/{username}/.conda/envs", check=False)
+    
+    # Verify configuration
+    final_config = run_command(f"{conda_path}/bin/conda config --show envs_dirs", check=False)
+    print(f"🔍 Updated conda envs_dirs: {final_config.stdout}")
+    
+    # Create environment in system location
     run_command(f"{conda_path}/bin/conda create -n {env_name} python={python_version} -y")
     
     # Verify environment was created
