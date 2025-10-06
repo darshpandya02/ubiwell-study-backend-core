@@ -332,17 +332,22 @@ def create_directory_structure(study_name, username, base_dir="/opt/studies"):
     
     # Create subdirectories
     directories = [
-        "data_uploads/uploads",
-        "data_uploads/processed",
-        "data_uploads/archived",
-        "ema_surveys",
         "logs",
-        "scripts",
+        "data",
+        "static",
+        "uploads",
         "config",
         "templates",
-        "static",
+        "scripts",
+        "static/css",
+        "static/js",
+        "data_uploads/uploads",
+        "data_uploads/processed",
+        "data_uploads/exceptions",
+        "data_uploads/logs",
         "active_sensing",
-        "data"
+        "ema_surveys",
+        "config-files/global"
     ]
     
     for subdir in directories:
@@ -364,16 +369,22 @@ def create_directory_structure_in_path(study_dir, username):
     
     # Create subdirectories
     directories = [
-        "config",
-        "data_uploads/uploads",
-        "data_uploads/processed", 
-        "data_uploads/archived",
-        "data_uploads/exceptions",
-        "ema_surveys",
         "logs",
-        "scripts",
+        "data",
+        "static",
+        "uploads",
+        "config",
         "templates",
-        "static"
+        "scripts",
+        "static/css",
+        "static/js",
+        "data_uploads/uploads",
+        "data_uploads/processed",
+        "data_uploads/exceptions",
+        "data_uploads/logs",
+        "active_sensing",
+        "ema_surveys",
+        "config-files/global"
     ]
     
     for directory in directories:
@@ -661,7 +672,7 @@ def create_config_file(study_dir, study_name, db_username, db_password, db_name,
             "data_upload_logs_path": str(study_dir / "data_uploads" / "logs"),
             "active_sensing_upload_path": str(study_dir / "active_sensing"),
             "ema_file_path": str(study_dir / "ema_surveys"),
-            "config_dir": str(study_dir / "config")
+            "config_dir": str(study_dir / "config-files")
         },
         "logging": {
             "level": "INFO",
