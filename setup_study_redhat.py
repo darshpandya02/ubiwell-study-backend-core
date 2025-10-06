@@ -424,18 +424,41 @@ def create_conda_environment(conda_path, study_name, username, python_version="3
     config_result = run_command(f"{conda_path}/bin/conda config --show envs_dirs", check=False)
     print(f"🔍 Current conda envs_dirs: {config_result.stdout}")
     
-    # Set system environment directory
-    run_command(f"{conda_path}/bin/conda config --set envs_dirs {conda_path}/envs", check=False)
+    # Reset conda configuration to use only system directory
+    print(f"🔧 Resetting conda configuration...")
     
-    # Remove user environment directory from config
-    run_command(f"{conda_path}/bin/conda config --remove envs_dirs /home/{username}/.conda/envs", check=False)
+    # Clear all existing envs_dirs
+    run_command(f"{conda_path}/bin/conda config --remove-key envs_dirs", check=False)
+    
+    # Set only the system environment directory
+    run_command(f"{conda_path}/bin/conda config --add envs_dirs {conda_path}/envs", check=False)
+    
+    # Ensure the envs directory exists and has proper permissions
+    envs_dir = f"{conda_path}/envs"
+    if not os.path.exists(envs_dir):
+        print(f"🔧 Creating envs directory: {envs_dir}")
+        run_command(f"mkdir -p {envs_dir}")
+    
+    # Set proper ownership
+    run_command(f"chown -R {username}:{username} {envs_dir}")
     
     # Verify configuration
     final_config = run_command(f"{conda_path}/bin/conda config --show envs_dirs", check=False)
     print(f"🔍 Updated conda envs_dirs: {final_config.stdout}")
     
     # Create environment in system location
-    run_command(f"{conda_path}/bin/conda create -n {env_name} python={python_version} -y")
+    print(f"🔧 Creating conda environment in system location...")
+    try:
+        result = run_command(f"{conda_path}/bin/conda create -n {env_name} python={python_version} -y", check=False)
+        if result.returncode != 0:
+            print(f"❌ Conda create failed with return code: {result.returncode}")
+            print(f"Debug - conda create output: {result.stdout}")
+            print(f"Debug - conda create error: {result.stderr}")
+            raise Exception(f"Conda create failed: {result.stderr}")
+    except Exception as e:
+        print(f"❌ Error creating conda environment: {e}")
+        print(f"💡 Manual test command: {conda_path}/bin/conda create -n {env_name} python={python_version} -y")
+        raise e
     
     # Verify environment was created
     result = run_command(f"{conda_path}/bin/conda env list", check=False)
