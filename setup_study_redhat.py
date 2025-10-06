@@ -199,11 +199,15 @@ def check_anaconda():
             import glob
             for path in glob.glob(path_pattern):
                 if os.path.exists(path):
-                    conda_dir = os.path.dirname(path)
+                    # Get the base conda directory (remove /bin/conda)
+                    conda_dir = os.path.dirname(os.path.dirname(path))
+                    print(f"🔍 Found conda at: {path} -> Base directory: {conda_dir}")
                     found_installations.append(conda_dir)
         else:
             if os.path.exists(path_pattern):
-                conda_dir = os.path.dirname(path_pattern)
+                # Get the base conda directory (remove /bin/conda)
+                conda_dir = os.path.dirname(os.path.dirname(path_pattern))
+                print(f"🔍 Found conda at: {path_pattern} -> Base directory: {conda_dir}")
                 found_installations.append(conda_dir)
     
     if found_installations:
@@ -316,7 +320,12 @@ def create_directory_structure(study_name, username, base_dir="/opt/studies"):
     """Create the study directory structure."""
     print(f"📁 Creating directory structure...")
     
-    study_dir = Path(base_dir) / study_name.lower().replace(" ", "_")
+    # If base_dir is a full path (contains the study name), use it directly
+    if study_name.lower().replace(" ", "_") in base_dir.lower() or study_name.lower().replace(" ", "-") in base_dir.lower():
+        study_dir = Path(base_dir)
+    else:
+        # Otherwise, append study name to base_dir
+        study_dir = Path(base_dir) / study_name.lower().replace(" ", "_")
     
     # Create base directory
     study_dir.mkdir(parents=True, exist_ok=True)
@@ -344,6 +353,36 @@ def create_directory_structure(study_name, username, base_dir="/opt/studies"):
     
     print(f"✅ Directory structure created: {study_dir}")
     return study_dir
+
+
+def create_directory_structure_in_path(study_dir, username):
+    """Create directory structure in the specified path."""
+    print(f"📁 Creating directory structure in: {study_dir}")
+    
+    # Create base directory
+    study_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create subdirectories
+    directories = [
+        "config",
+        "data_uploads/uploads",
+        "data_uploads/processed", 
+        "data_uploads/archived",
+        "data_uploads/exceptions",
+        "ema_surveys",
+        "logs",
+        "scripts",
+        "templates",
+        "static"
+    ]
+    
+    for directory in directories:
+        dir_path = study_dir / directory
+        dir_path.mkdir(parents=True, exist_ok=True)
+        # Set ownership
+        run_command(f"chown -R {username}:{username} {dir_path}")
+    
+    print(f"✅ Directory structure created in: {study_dir}")
 
 
 def create_conda_environment(conda_path, study_name, username, python_version="3.9"):
@@ -799,6 +838,7 @@ def main():
     parser.add_argument("--auth-key", required=True, help="API authentication key")
     parser.add_argument("--announcement-key", required=True, help="Announcement system key")
     parser.add_argument("--base-dir", default="/opt/studies", help="Base directory for studies (default: /opt/studies)")
+    parser.add_argument("--study-dir", help="Full path to study directory (overrides base-dir + study name)")
     
     args = parser.parse_args()
     
@@ -806,7 +846,10 @@ def main():
     print(f"📋 Study: {args.study_name}")
     print(f"👤 User: {args.user}")
     print(f"🗄️ Database: {args.db_name}")
-    print(f"📁 Base Directory: {args.base_dir}")
+    if args.study_dir:
+        print(f"📁 Study Directory: {args.study_dir}")
+    else:
+        print(f"📁 Base Directory: {args.base_dir}")
     print()
     
     # Check system requirements
@@ -819,7 +862,15 @@ def main():
     
     # Create user and directories
     create_user(args.user)
-    study_dir = create_directory_structure(args.study_name, args.user, args.base_dir)
+    
+    # Determine study directory
+    if args.study_dir:
+        study_dir = Path(args.study_dir)
+        print(f"📁 Using specified study directory: {study_dir}")
+        # Create the directory structure in the specified path
+        create_directory_structure_in_path(study_dir, args.user)
+    else:
+        study_dir = create_directory_structure(args.study_name, args.user, args.base_dir)
     
     # Setup conda environment
     env_name = create_conda_environment(conda_path, args.study_name, args.user, args.python_version)
