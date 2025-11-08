@@ -1,0 +1,3 @@
+[console_scripts]
+setup-study = study_framework_core.setup_study:main
+update-core = study_framework_core.update_core:main

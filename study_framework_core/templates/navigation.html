@@ -1,50 +1,74 @@
-<!-- Corporate Clean Navigation Bar -->
 <nav class="navbar navbar-expand-lg mb-4">
     <div class="container">
         <a class="navbar-brand" href="https://{{ request.host }}/internal_web/">
             <i class="fas fa-shield-alt me-2"></i>Study Framework
         </a>
-        
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-        
+
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
+                {% if nav_items %}
+                {% for item in nav_items %}
                 <li class="nav-item">
-                    <a class="nav-link" href="https://{{ request.host }}/internal_web/">
-                        <i class="fas fa-home me-1"></i>Dashboard
+                    {% if item.url_for %}
+                    <a class="nav-link" href="{{ url_for(item.url) }}">
+                        <i class="{{ item.icon }} me-1"></i>{{ item.label }}
                     </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="https://{{ request.host }}/internal_web/user-management">
-                        <i class="fas fa-users me-1"></i>User Management
+                    {% else %}
+                    <a class="nav-link" href="{{ item.url }}">
+                        <i class="{{ item.icon }} me-1"></i>{{ item.label }}
                     </a>
+                    {% endif %}
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="https://{{ request.host }}/internal_web/ema-schedule">
-                        <i class="fas fa-calendar-alt me-1"></i>EMA Schedule
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="https://{{ request.host }}/internal_web/config-schedule">
-                        <i class="fas fa-cogs me-1"></i>Config Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="https://{{ request.host }}/internal_web/download_compliance">
-                        <i class="fas fa-download me-1"></i>Data Export
-                    </a>
-                </li>
+                {% endfor %}
+                {% endif %}
             </ul>
-            
+
             <div class="navbar-nav">
                 <div class="navbar-text me-3">
                     <i class="fas fa-user me-1"></i>{{ session.get('admin_username', 'Admin') }}
                 </div>
-                <a href="https://{{ request.host }}/internal_web/logout" class="btn btn-outline-light btn-sm">
+
+                {% if user_menu_items %}
+                <!-- User dropdown menu if extensions added items -->
+                <div class="dropdown me-2">
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="userMenuDropdown"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
+                        {% for item in user_menu_items %}
+                        <li>
+                            {% if item.url_for %}
+                            <a class="dropdown-item" href="{{ url_for(item.url) }}">
+                                <i class="{{ item.icon }} me-2"></i>{{ item.label }}
+                            </a>
+                            {% else %}
+                            <a class="dropdown-item" href="{{ item.url }}">
+                                <i class="{{ item.icon }} me-2"></i>{{ item.label }}
+                            </a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <a href="/internal_web/logout" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% else %}
+                <!-- Simple logout button if no user menu items -->
+                <a href="/internal_web/logout" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-sign-out-alt me-1"></i>Logout
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -56,11 +80,11 @@
     <div class="container">
         <ol class="breadcrumb">
             {% for breadcrumb in breadcrumbs %}
-                {% if loop.last %}
-                    <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.text }}</li>
-                {% else %}
-                    <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a></li>
-                {% endif %}
+            {% if loop.last %}
+            <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.text }}</li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a></li>
+            {% endif %}
             {% endfor %}
         </ol>
     </div>
@@ -74,21 +98,21 @@
         <div class="col-auto">
             <div class="btn-group" role="group" aria-label="Date navigation">
                 {% if previous_date %}
-                    <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=previous_date) }}" class="btn btn-outline-primary">
-                        <i class="fas fa-chevron-left me-1"></i>Previous Day
-                    </a>
+                <a href="{{ url_for('viewdashboarddate', date=previous_date) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-chevron-left me-1"></i>Previous Day
+                </a>
                 {% endif %}
-                
+
                 {% if date %}
-                    <button type="button" class="btn btn-primary disabled">
-                        <i class="fas fa-calendar me-1"></i>{{ date }}
-                    </button>
+                <button type="button" class="btn btn-primary disabled">
+                    <i class="fas fa-calendar me-1"></i>{{ date }}
+                </button>
                 {% endif %}
-                
+
                 {% if next_date %}
-                    <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=next_date) }}" class="btn btn-outline-primary">
-                        Next Day<i class="fas fa-chevron-right ms-1"></i>
-                    </a>
+                <a href="{{ url_for('viewdashboarddate', date=next_date) }}" class="btn btn-outline-primary">
+                    Next Day<i class="fas fa-chevron-right ms-1"></i>
+                </a>
                 {% endif %}
             </div>
         </div>
@@ -103,19 +127,20 @@
         <div class="col-auto">
             <div class="btn-group" role="group" aria-label="User detail navigation">
                 {% if previous_date %}
-                    <a href="https://{{ request.host }}{{ url_for(request.endpoint, user=user, date=previous_date) }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-chevron-left me-1"></i>Previous Day
-                    </a>
+                <a href="{{ url_for(request.endpoint, user=user, date=previous_date) }}"
+                    class="btn btn-outline-secondary">
+                    <i class="fas fa-chevron-left me-1"></i>Previous Day
+                </a>
                 {% endif %}
-                
-                <a href="https://{{ request.host }}{{ url_for('viewdashboarddate', date=date) }}" class="btn btn-secondary">
+
+                <a href="{{ url_for('viewdashboarddate', date=date) }}" class="btn btn-secondary">
                     <i class="fas fa-list me-1"></i>Back to Dashboard
                 </a>
-                
+
                 {% if next_date %}
-                    <a href="https://{{ request.host }}{{ url_for(request.endpoint, user=user, date=next_date) }}" class="btn btn-outline-secondary">
-                        Next Day<i class="fas fa-chevron-right ms-1"></i>
-                    </a>
+                <a href="{{ url_for(request.endpoint, user=user, date=next_date) }}" class="btn btn-outline-secondary">
+                    Next Day<i class="fas fa-chevron-right ms-1"></i>
+                </a>
                 {% endif %}
             </div>
         </div>

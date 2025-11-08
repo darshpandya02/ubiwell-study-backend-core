@@ -20,6 +20,7 @@ from markupsafe import Markup
 from study_framework_core.core.config import get_config
 from study_framework_core.core.handlers import get_db, verify_admin_login, get_available_modules
 from study_framework_core.core.dashboard import DashboardBase
+from study_framework_core.core.navigation_registry import get_navigation_registry, register_core_navigation
 
 # Create a concrete dashboard implementation for internal web
 class SimpleDashboard(DashboardBase):
@@ -65,8 +66,39 @@ class InternalWebBase:
         self.app = app
         self.dashboard = dashboard
         self.api = Api(app, prefix='/internal_web')
+        self.setup_navigation()
+        self.setup_template_context()
         self.setup_routes()
         self.setup_session_config()
+    
+    def setup_navigation(self):
+        """Initialize core navigation items."""
+        # Register core navigation items
+        # Only register if not already registered (to avoid duplicates on multiple initializations)
+        nav_registry = get_navigation_registry()
+        if not nav_registry.get_items():
+            register_core_navigation()
+            logging.info("Core navigation items registered")
+    
+    def setup_template_context(self):
+        """Setup Flask context processor to inject navigation items into all templates."""
+        nav_registry = get_navigation_registry()
+        
+        @self.app.context_processor
+        def inject_navigation():
+            """Inject navigation items into all templates."""
+            try:
+                return {
+                    'nav_items': nav_registry.get_items(),
+                    'user_menu_items': nav_registry.get_user_menu_items()
+                }
+            except Exception as e:
+                # Fallback to empty lists if navigation registry fails
+                logging.error(f"Error loading navigation items: {e}")
+                return {
+                    'nav_items': [],
+                    'user_menu_items': []
+                }
     
     def setup_session_config(self):
         """Setup session configuration."""

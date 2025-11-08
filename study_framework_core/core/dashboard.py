@@ -45,7 +45,7 @@ class DashboardBase(ABC):
             DashboardColumn("garmin_worn", "Garmin Worn", width="10%"),
             DashboardColumn("garmin_on", "Garmin On", width="10%"),
             DashboardColumn("distance_traveled", "Distance Traveled", width="12%"),
-            DashboardColumn("details", "Details", width="8%"),
+            DashboardColumn("details", "Details", width="12%"),  # Increased from 8% to 12% to fit button
         ]
     
     @abstractmethod
@@ -175,7 +175,9 @@ class DashboardBase(ABC):
                 value = row_data.get(column.name, '')
                 if isinstance(value, float):
                     value = f"{value:.2f}"
-                rows_html += f'<td>{value}</td>'
+                # Add CSS class for Details column to enable proper styling
+                css_class = f' class="column-{column.name}"' if column.name == 'details' else ''
+                rows_html += f'<td{css_class}>{value}</td>'
             rows_html += '</tr>\n'
         
         # Calculate navigation dates

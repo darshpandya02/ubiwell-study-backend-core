@@ -1,0 +1,262 @@
+Metadata-Version: 2.4
+Name: study-framework-core
+Version: 1.0.0
+Summary: Core framework for Ubiwell study deployments
+Home-page: https://github.com/your-org/ubiwell-study-backend-core
+Author: Ubiwell Team
+Author-email: Ubiwell Team <team@ubiwell.com>
+License: MIT
+Project-URL: Homepage, https://github.com/your-org/ubiwell-study-backend-core
+Project-URL: Repository, https://github.com/your-org/ubiwell-study-backend-core
+Project-URL: Issues, https://github.com/your-org/ubiwell-study-backend-core/issues
+Keywords: study,framework,flask,api,dashboard
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: flask>=2.0.0
+Requires-Dist: flask-restful>=0.3.9
+Requires-Dist: pymongo>=4.0.0
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: seaborn>=0.11.0
+Requires-Dist: python-dotenv>=0.19.0
+Requires-Dist: requests>=2.25.0
+Requires-Dist: plotly>=5.17.0
+Requires-Dist: gunicorn>=20.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=6.0.0; extra == "dev"
+Requires-Dist: black>=21.0.0; extra == "dev"
+Requires-Dist: flake8>=3.9.0; extra == "dev"
+Dynamic: author
+Dynamic: home-page
+Dynamic: requires-python
+
+# Study Framework Core
+
+A modular, reusable framework for data collection studies that provides core functionality while allowing easy customization for individual studies. This framework is designed to be used as a **Git submodule** within study projects.
+
+## 🚀 Quick Start
+
+### **For Study Projects (Submodule Setup)**
+```bash
+# In your study project directory
+git submodule add https://github.com/UbiWell/ubiwell-study-backend-core.git
+git submodule update --init --recursive
+
+# Run setup script
+cd ubiwell-study-backend-core
+sudo python setup_study.py "My Study" \
+    --user myuser \
+    --db-username mydbuser \
+    --db-password mydbpass \
+    --db-name my_study_db \
+    --auth-key my-auth-key \
+    --announcement-key my-announcement-key
+```
+
+### **For Framework Development**
+```bash
+# Clone framework for development
+git clone https://github.com/UbiWell/ubiwell-study-backend-core.git
+cd ubiwell-study-backend-core
+
+# Install in development mode
+pip install -e .
+```
+
+## 📋 What This Framework Provides
+
+### ✅ **Core Features**
+- **API Endpoints**: User authentication, file uploads, data collection
+- **Internal Dashboard**: Data monitoring, participant management
+- **Data Processing**: Phone data, Garmin FIT files, daily summaries
+- **User Management**: Participant creation, credential generation
+- **Automated Processing**: Cron jobs for data processing and summaries
+
+### ✅ **Modular Architecture**
+- **Core Framework**: Standard functionality for all studies
+- **Study-Specific Extensions**: Custom dashboard columns, API endpoints, processing
+- **Easy Updates**: Update core without affecting customizations
+- **Submodule Integration**: Seamless integration with study projects
+
+## 🎯 Use Cases
+
+### **New Study Setup**
+```bash
+# Create study project
+mkdir my-study
+cd my-study
+git init
+
+# Add framework as submodule
+git submodule add https://github.com/UbiWell/ubiwell-study-backend-core.git
+git submodule update --init --recursive
+
+# Run automated setup
+cd ubiwell-study-backend-core
+sudo python setup_study.py "My Study" \
+    --user myuser \
+    --db-username mydbuser \
+    --db-password mydbpass \
+    --db-name my_study_db \
+    --auth-key my-auth-key \
+    --announcement-key my-announcement-key
+```
+
+### **Adding Custom Features**
+```python
+# Extend core dashboard
+class MyStudyDashboard(DashboardBase):
+    def get_custom_columns(self):
+        return ["Custom Column 1", "Custom Column 2"]
+    
+    def generate_custom_row_data(self, user_data, daily_summary):
+        return {"custom_data": self._get_custom_data(user_data)}
+```
+
+### **Updating Core Framework**
+```bash
+# Update the submodule
+cd ubiwell-study-backend-core
+git submodule update --remote
+
+# Update the framework
+python update_core.py --study-name "My Study"
+
+# Commit the update
+cd ..
+git add ubiwell-study-backend-core
+git commit -m "Update framework to latest version"
+```
+
+## 📁 Repository Structure
+
+```
+ubiwell-study-backend-core/
+├── study_framework_core/          # Core framework package
+│   ├── core/                     # Core classes and interfaces
+│   ├── templates/                # Core HTML templates
+│   ├── static/                   # Core CSS and JavaScript
+│   └── scripts/                  # Processing scripts
+├── docs/                         # Documentation
+│   ├── README.md                # Documentation index
+│   ├── EXTENSION_GUIDE.md       # How to extend the framework
+│   ├── ARCHITECTURE.md          # Framework architecture
+│   └── API_REFERENCE.md         # Complete API reference
+├── tests/                        # Testing utilities
+│   ├── README.md                # Testing guide
+│   ├── test_api_endpoints.py    # API testing script
+│   ├── API_TEST_GUIDE.md        # API testing guide
+│   ├── upload_test_data.py      # Test data upload script
+│   ├── test_pipeline_step_by_step.py  # Pipeline testing
+│   ├── test-files.zip           # Test data archive
+│   ├── install_requirements.py  # Requirements installation
+│   ├── create_admin_user.py     # Admin user creation
+│   └── fix_wsgi_files.py        # WSGI file fixes
+├── setup_study.py                # Automated setup script
+├── update_core.py                # Update script
+├── requirements.txt              # Dependencies
+├── SETUP_GUIDE.md               # Complete setup guide
+└── README.md                    # This file
+```
+
+## 🔧 Key Components
+
+### **Core Package (`study_framework_core/`)**
+- **`core/dashboard.py`**: Extensible dashboard system
+- **`core/api.py`**: Standard API endpoints
+- **`core/processing.py`**: Data processing pipeline
+- **`core/internal_web.py`**: Internal web interface
+- **`core/handlers.py`**: Common helper functions
+
+### **Setup Scripts**
+- **`setup_study.py`**: Complete study deployment
+- **`update_core.py`**: Framework updates
+
+### **Documentation**
+- **`SETUP_GUIDE.md`**: Comprehensive setup instructions
+- **`docs/`**: Complete documentation suite
+
+## 🎨 Customization Examples
+
+### **Connect Study Implementation**
+```python
+# Custom dashboard with EMA, app events, depression scores
+class ConnectStudyDashboard(DashboardBase):
+    def get_custom_columns(self):
+        return [
+            "EMA Responses",
+            "App Events", 
+            "Daily Diary",
+            "Depression Score"
+        ]
+```
+
+### **Custom API Endpoints**
+```python
+# Study-specific API endpoints
+class MyStudyAPI(APIBase):
+    def get_custom_endpoints(self):
+        return [CustomEndpoint1, CustomEndpoint2]
+```
+
+### **Custom Data Processing**
+```python
+# Study-specific data processing
+class MyStudyDataProcessor(DataProcessor):
+    def process_phone_data(self, user_id):
+        super().process_phone_data(user_id)  # Core processing
+        self._process_custom_data(user_id)   # Custom processing
+```
+
+## 🔄 Update Workflow
+
+### **When You Release Updates:**
+1. **Push changes** to the UbiWell repository
+2. **Users update** with `git submodule update --remote`
+3. **Core improvements** are applied automatically
+4. **Custom code** stays intact
+
+### **When Users Add Custom Features:**
+1. **Extend core classes** in their own files
+2. **Commit to their repository** (not the UbiWell repository)
+3. **Update core independently** when needed
+
+## 📖 Documentation
+
+- **[Setup Guide](SETUP_GUIDE.md)**: Complete setup instructions
+- **[Extension Guide](docs/EXTENSION_GUIDE.md)**: How to extend the framework
+- **[Architecture Guide](docs/ARCHITECTURE.md)**: Framework architecture overview
+- **[API Reference](docs/API_REFERENCE.md)**: Complete API documentation
+- **[Documentation Index](docs/README.md)**: All documentation organized by topic
+
+## 🛠️ Requirements
+
+- **Python**: 3.8+
+- **Server**: Ubuntu/Debian with root access
+- **Database**: MongoDB
+- **Web Server**: Nginx (auto-configured)
+- **Process Manager**: Systemd (auto-configured)
+
+## 🚀 Getting Started
+
+1. **Add as submodule** to your study project
+2. **Follow [SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete setup
+3. **Customize** for your study needs
+4. **Deploy** and start collecting data!
+
+## 📞 Support
+
+For setup help, see the [troubleshooting section](SETUP_GUIDE.md#troubleshooting) in the setup guide.
+
+---
+
+**Ready to build your data collection study?** Start with the [Setup Guide](SETUP_GUIDE.md)! 🚀
+
