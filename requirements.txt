@@ -3,7 +3,7 @@ Flask-RESTful==0.3.10
 gunicorn==22.0.0
 pymongo==4.5.0
 marshmallow==3.20.1
-Werkzeug==2.3.7
+Werkzeug==3.0.6
 geopy==2.3.0
 pandas==2.0.3
 numpy==1.24.3
