@@ -14,7 +14,7 @@ from .handlers import (
     save_ema_file, allowed_file, get_db, get_db_client,
     get_latest_app_version, save_json_data, generate_token, generate_password,
     create_user, create_multiple_users, get_all_users, export_users_csv,
-    create_admin_user, verify_admin_login, get_available_modules
+    create_admin_user, verify_admin_login
 )
 from .schemas import (
     LoginSchema, LoginCodeSchema, UserInfoSchema, UserPingSchema,
@@ -38,7 +38,6 @@ __all__ = [
     'get_latest_app_version', 'save_json_data',
     'generate_token', 'generate_password', 'create_user', 'create_multiple_users',
     'get_all_users', 'export_users_csv', 'create_admin_user', 'verify_admin_login',
-    'get_available_modules',
     # Processing
     'DataProcessor', 'process_all_data', 'generate_all_summaries', 'process_garmin_files',
     # Schemas

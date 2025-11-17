@@ -12,14 +12,16 @@ import csv
 import shutil
 from datetime import datetime, timedelta
 from collections import defaultdict
+from typing import Dict, Any
 
 from flask import Flask, request, jsonify, render_template, Response, send_from_directory, send_file, session, redirect, url_for
 from flask_restful import Resource, Api
 from markupsafe import Markup
 
 from study_framework_core.core.config import get_config
-from study_framework_core.core.handlers import get_db, verify_admin_login, get_available_modules
+from study_framework_core.core.handlers import get_db, verify_admin_login
 from study_framework_core.core.dashboard import DashboardBase
+from study_framework_core.core.landing_page import LandingPageBase
 
 # Create a concrete dashboard implementation for internal web
 class SimpleDashboard(DashboardBase):
@@ -28,6 +30,13 @@ class SimpleDashboard(DashboardBase):
     
     def generate_custom_row_data(self, user_data, date_str):
         return dict()
+
+class SimpleLandingPage(LandingPageBase):
+    """Simple landing page implementation with no custom modules."""
+    
+    def _get_custom_modules(self) -> list[Dict[str, Any]]:
+        """No custom modules in the default implementation."""
+        return []
 
 
 class HealthCheck(Resource):
@@ -61,10 +70,11 @@ class SessionDebug(Resource):
 class InternalWebBase:
     """Base class for internal web functionality."""
     
-    def __init__(self, app: Flask, dashboard: DashboardBase):
+    def __init__(self, app: Flask, dashboard: DashboardBase, landing_page: LandingPageBase = None):
         self.app = app
         self.dashboard = dashboard
         self.api = Api(app, prefix='/internal_web')
+        self.landing_page = landing_page or SimpleLandingPage()
         self.setup_routes()
         self.setup_session_config()
     
@@ -105,7 +115,7 @@ class InternalWebBase:
         self.api.add_resource(LoginPage, '/login')
         self.api.add_resource(LoginHandler, '/login-handler')
         self.api.add_resource(LogoutHandler, '/logout')
-        self.api.add_resource(LandingPage, '/')
+        self.api.add_resource(ViewLandingPage, '/', resource_class_kwargs={'landing_page': self.landing_page})
         
         # Dashboard routes (now require authentication)
         self.api.add_resource(ViewDashboard, '/dashboard')
@@ -216,19 +226,45 @@ class LogoutHandler(Resource):
         session.clear()
         return redirect('/internal_web/login')
 
-
-class LandingPage(Resource):
+class ViewLandingPage(Resource):
     """Landing page showing all available modules."""
+    
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.landing_page = kwargs['landing_page']
+        
     def get(self):
+        """Render the landing page."""
+        # Check authentication
         if 'admin_logged_in' not in session:
             return redirect('/internal_web/login')
         
-        modules = get_available_modules()
+        # Refresh session
+        session.permanent = True
+        session.modified = True
+        
+        # Get template context from the landing page implementation
+        context = self.landing_page.get_template_context(
+            username=session.get('admin_username')
+        )
         
         return Response(
-            render_template('landing_page.html', modules=modules, username=session.get('admin_username')),
+            render_template('landing_page.html', modules = context.modules, username = context.username),
             mimetype='text/html'
         )
+
+# class LandingPage(Resource):
+#     """Landing page showing all available modules."""
+#     def get(self):
+#         if 'admin_logged_in' not in session:
+#             return redirect('/internal_web/login')
+        
+#         modules = get_available_modules()
+        
+#         return Response(
+#             render_template('landing_page.html', modules=modules, username=session.get('admin_username')),
+#             mimetype='text/html'
+#         )
 
 
 class ViewDashboard(Resource):
@@ -374,9 +410,6 @@ class ViewUserDetail(Resource):
         except Exception as e:
             logging.error(f"Error generating plots for {user} on {date}: {e}")
             return {"message": f"Error generating plots: {str(e)}", "status": 500}, 500
-
-
-
 
 
 class ViewAnnouncement(Resource):

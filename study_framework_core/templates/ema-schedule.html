@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +28,7 @@
             --box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
             --box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        
+
         body {
             background: var(--light-bg);
             color: var(--gray-800);
@@ -35,17 +36,17 @@
             min-height: 100vh;
             line-height: 1.6;
         }
-        
+
         .navbar {
             background: var(--white) !important;
             border-bottom: 1px solid var(--gray-200);
             box-shadow: var(--box-shadow);
         }
-        
+
         .main-container {
             padding: 2rem 0;
         }
-        
+
         .content-section {
             background: var(--white);
             border-radius: var(--border-radius);
@@ -54,7 +55,7 @@
             box-shadow: var(--box-shadow);
             border: 1px solid var(--gray-200);
         }
-        
+
         .section-title {
             color: var(--gray-900);
             font-weight: 600;
@@ -64,11 +65,11 @@
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .table {
             margin-bottom: 0;
         }
-        
+
         .table thead th {
             background: var(--gray-50);
             color: var(--gray-700);
@@ -80,20 +81,20 @@
             padding: 1rem;
             border-bottom: 1px solid var(--gray-200);
         }
-        
+
         .table tbody tr {
             transition: background-color 0.2s ease;
             border-bottom: 1px solid var(--gray-100);
         }
-        
+
         .table tbody tr:hover {
             background: var(--gray-50);
         }
-        
+
         .table tbody tr:last-child {
             border-bottom: none;
         }
-        
+
         .table tbody td {
             border: none;
             vertical-align: middle;
@@ -101,7 +102,7 @@
             color: var(--gray-700);
             font-weight: 500;
         }
-        
+
         .btn-action {
             background: var(--primary-color);
             border: none;
@@ -113,14 +114,14 @@
             font-weight: 500;
             transition: all 0.2s ease;
         }
-        
+
         .btn-action:hover {
             background: var(--secondary-color);
             color: white;
             text-decoration: none;
             transform: translateY(-1px);
         }
-        
+
         .form-control {
             border-radius: 8px;
             border: 1px solid var(--gray-300);
@@ -128,12 +129,12 @@
             color: var(--gray-700);
             transition: border-color 0.2s ease;
         }
-        
+
         .form-control:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
-        
+
         .btn-submit {
             background: linear-gradient(135deg, var(--success-color) 0%, #20c997 100%);
             border: none;
@@ -143,35 +144,36 @@
             font-weight: 600;
             transition: all 0.3s ease;
         }
-        
+
         .btn-submit:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
             color: white;
         }
-        
+
         .status-badge {
             padding: 0.5rem 1rem;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
         }
-        
+
         .status-active {
             background: linear-gradient(135deg, var(--success-color) 0%, #20c997 100%);
             color: white;
         }
-        
+
         .status-inactive {
             background: linear-gradient(135deg, var(--danger-color) 0%, #e83e8c 100%);
             color: white;
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     {% include 'navigation.html' %}
-    
+
     <!-- Main Content -->
     <div class="container main-container">
         <!-- Header -->
@@ -181,7 +183,7 @@
             </h1>
             <p class="text-muted">Manage EMA surveys and schedules for study participants.</p>
         </div>
-        
+
         <!-- User Dashboard -->
         <div class="content-section">
             <h2 class="section-title">
@@ -202,7 +204,7 @@
                 </table>
             </div>
         </div>
-        
+
         <!-- Replace EMA -->
         <div class="content-section">
             <h2 class="section-title">
@@ -221,7 +223,8 @@
                 </div>
                 <div class="col-md-4">
                     <label for="replacePasskey" class="form-label">Passkey</label>
-                    <input type="password" id="replacePasskey" class="form-control" placeholder="Enter passkey" required>
+                    <input type="password" id="replacePasskey" class="form-control" placeholder="Enter passkey"
+                        required>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-submit">
@@ -230,7 +233,7 @@
                 </div>
             </form>
         </div>
-        
+
         <!-- Add New User -->
         <div class="content-section">
             <h2 class="section-title">
@@ -247,7 +250,8 @@
                 </div>
                 <div class="col-md-4">
                     <label for="addUserPasskey" class="form-label">Passkey</label>
-                    <input type="password" id="addUserPasskey" class="form-control" placeholder="Enter passkey" required>
+                    <input type="password" id="addUserPasskey" class="form-control" placeholder="Enter passkey"
+                        required>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-submit">
@@ -257,24 +261,24 @@
             </form>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Load users on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadUsers();
         });
-        
+
         function loadUsers() {
             fetch('/internal_web/ema-schedule/users')
                 .then(response => response.json())
                 .then(data => {
                     const userTable = document.getElementById('userTable');
                     const userSelect = document.getElementById('userSelect');
-                    
+
                     userTable.innerHTML = '';
                     userSelect.innerHTML = '<option value="">Choose user...</option>';
-                    
+
                     data.users.forEach(user => {
                         // Add to table
                         const row = userTable.insertRow();
@@ -287,7 +291,7 @@
                                 </a>
                             </td>
                         `;
-                        
+
                         // Add to select
                         const option = document.createElement('option');
                         option.value = user.username;
@@ -299,19 +303,97 @@
                     console.error('Error loading users:', error);
                 });
         }
-        
-        // Handle form submissions
-        document.getElementById('replaceEmaForm').addEventListener('submit', function(e) {
+
+        // Replace the existing replaceEmaForm event listener with this implementation
+
+        document.getElementById('replaceEmaForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            // Add form submission logic here
-            alert('EMA replacement functionality will be implemented');
+            const button = e.target.querySelector('button[type="submit"]');
+
+            // Show loading state
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Replacing...';
+            button.disabled = true;
+
+            try {
+                const username = document.getElementById('userSelect').value;
+                const fileInput = document.getElementById('fileReplace');
+                const passkey = document.getElementById('replacePasskey').value;
+
+                if (!username || !fileInput.files[0] || !passkey) {
+                    showAlert('Please fill in all fields', 'warning');
+                    return;
+                }
+
+                // Create FormData object
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('file', fileInput.files[0]);
+                formData.append('passkey', passkey);
+
+                const response = await fetch('/internal_web/ema-schedule/replace-ema', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(`EMA schedule successfully replaced for ${username}!`, 'success');
+                    // Reset form
+                    document.getElementById('replaceEmaForm').reset();
+                    // Reload users to update status
+                    loadUsers();
+                } else {
+                    showAlert(`Error: ${result.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            } finally {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
         });
-        
-        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+
+        // Add this helper function if it doesn't exist
+        function showAlert(message, type = 'info') {
+            // Check if alert container exists, if not create one
+            let alertContainer = document.querySelector('.alert-container');
+            if (!alertContainer) {
+                alertContainer = document.createElement('div');
+                alertContainer.className = 'alert-container';
+                document.querySelector('.container').insertBefore(
+                    alertContainer,
+                    document.querySelector('.content-section')
+                );
+            }
+
+            const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="border-radius: 12px; margin-bottom: 1rem;">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+            alertContainer.innerHTML = alertHtml;
+
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+
+        document.getElementById('addUserForm').addEventListener('submit', function (e) {
             e.preventDefault();
             // Add form submission logic here
             alert('Add user functionality will be implemented');
         });
     </script>
 </body>
+
 </html>
