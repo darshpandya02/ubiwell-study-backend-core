@@ -21,6 +21,17 @@ from study_framework_core.core.config import get_config
 from study_framework_core.core.handlers import get_db, verify_admin_login, get_available_modules
 from study_framework_core.core.dashboard import DashboardBase
 
+
+def setup_internal_web_logging():
+    """Setup logging for internal web endpoints."""
+    config = get_config()
+    
+    logging.basicConfig(
+        level=getattr(logging, config.logging.level.upper()),
+        format=config.logging.format,
+        filename=config.get_log_file_path('internal_web')
+    )
+
 # Create a concrete dashboard implementation for internal web
 class SimpleDashboard(DashboardBase):
     def _get_custom_columns(self):
@@ -65,6 +76,9 @@ class InternalWebBase:
         self.app = app
         self.dashboard = dashboard
         self.api = Api(app, prefix='/internal_web')
+        # Setup logging if not already configured
+        if not logging.getLogger().handlers:
+            setup_internal_web_logging()
         self.setup_routes()
         self.setup_session_config()
     

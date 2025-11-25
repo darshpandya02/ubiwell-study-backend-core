@@ -23,6 +23,18 @@ from study_framework_core.core.schemas import (
     LoginSchema, LoginCodeSchema, UserInfoSchema, UserPingSchema
 )
 
+
+def setup_api_logging():
+    """Setup logging for API endpoints."""
+    from study_framework_core.core.config import get_config
+    config = get_config()
+    
+    logging.basicConfig(
+        level=getattr(logging, config.logging.level.upper()),
+        format=config.logging.format,
+        filename=config.get_log_file_path('api')
+    )
+
 def handle_response(message, status):
     """Create standardized response object."""
     response_obj = dict()
@@ -101,6 +113,9 @@ class CoreAPIEndpoints:
     def __init__(self, api: Api, auth_key: str):
         self.api = api
         self.auth_key = auth_key
+        # Setup logging if not already configured
+        if not logging.getLogger().handlers:
+            setup_api_logging()
         self.setup_core_routes()
     
     def setup_core_routes(self):
