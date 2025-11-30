@@ -77,21 +77,20 @@ class SessionDebug(Resource):
         }
         return session_info, 200
 
-
 class InternalWebBase:
     """Base class for internal web functionality."""
     
-    def __init__(self, app: Flask, dashboard: DashboardBase, landing_page: LandingPageBase = None):
+    def __init__(self, app: Flask, dashboard: DashboardBase, landing_page: LandingPageBase):
         self.app = app
         self.dashboard = dashboard
         self.api = Api(app, prefix='/internal_web')
-        self.landing_page = landing_page or SimpleLandingPage()
+        self.landing_page = landing_page
         # Setup logging if not already configured
         if not logging.getLogger().handlers:
             setup_internal_web_logging()
         self.setup_routes()
         self.setup_session_config()
-    
+
     def setup_session_config(self):
         """Setup session configuration."""
         # Use a consistent secret key to prevent session invalidation on app restarts
@@ -263,22 +262,9 @@ class ViewLandingPage(Resource):
         )
         
         return Response(
-            render_template('landing_page.html', modules = context.modules, username = context.username),
+            render_template('landing_page.html', modules = context['modules'], username = context['username']),
             mimetype='text/html'
         )
-
-# class LandingPage(Resource):
-#     """Landing page showing all available modules."""
-#     def get(self):
-#         if 'admin_logged_in' not in session:
-#             return redirect('/internal_web/login')
-        
-#         modules = get_available_modules()
-        
-#         return Response(
-#             render_template('landing_page.html', modules=modules, username=session.get('admin_username')),
-#             mimetype='text/html'
-#         )
 
 
 class ViewDashboard(Resource):

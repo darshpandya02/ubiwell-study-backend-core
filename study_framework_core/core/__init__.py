@@ -7,6 +7,7 @@ from .api import APIBase, CoreAPIEndpoints
 from .processing import DataProcessorBase
 from .processing_scripts import DataProcessor, process_all_data, generate_all_summaries, process_garmin_files
 from .internal_web import InternalWebBase
+from .landing_page import LandingPageBase
 from .config import StudyFrameworkConfig, get_config, set_config_file
 from .handlers import (
     login_check, login_code_check, save_info, save_user_ping,
@@ -28,6 +29,7 @@ __all__ = [
     'CoreAPIEndpoints',
     'DataProcessorBase',
     'InternalWebBase',
+    'LandingPageBase',
     'StudyFrameworkConfig',
     'get_config',
     'set_config_file',
